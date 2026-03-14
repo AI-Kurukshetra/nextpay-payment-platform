@@ -33,6 +33,14 @@
 [2026-03-14 16:14] codex — Audited ignore files and tightened `.gitignore` to prevent IDE/env/log/local-store artifacts from being pushed.
 [2026-03-14 16:26] codex — Added a merchant-accessible storefront demo page with product selection, buyer checkout form, and gateway routing options.
 [2026-03-14 16:26] codex — Added `/api/v1/dashboard/storefront/checkout` session-auth endpoint and shared storefront catalog for end-to-end payment simulation.
+[2026-03-14 17:08] codex — Added standalone `storefront-app/` (independent Next.js app) with separate package/env/config and buyer storefront UI.
+[2026-03-14 17:08] codex — Added `storefront-app/api/checkout` server route that calls PayForge `/api/v1/payments` using gateway base URL + API key env config.
+[2026-03-14 17:50] codex — Added merchant payment-type preferences API/UI to enable or disable card/bank/crypto acceptance from dashboard.
+[2026-03-14 17:50] codex — Enforced merchant payment-type preferences in payment creation path and added Supabase migration + regression test coverage.
 [2026-03-14 16:30] codex — Implemented voice-command payment execution (`create/capture/refund`) with ASR/NLU provider adapters, fallback parsing, API route, OpenAPI docs, and unit tests.
 [2026-03-14 16:33] codex — Fixed Vercel runtime error from missing Supabase URL/key by no-oping middleware `updateSession()` when public Supabase env vars are unset.
 [2026-03-14 16:35] codex — Replaced skip behavior with strict Supabase config resolver using `NEXT_PUBLIC_*` with server-side fallback to `SUPABASE_*`, preserving hard DB requirement while fixing Vercel env-name mismatch.
+[2026-03-14 17:52] codex — Added API-key merchant payment-preferences endpoint (`GET/PATCH /api/v1/payment-preferences`) to manage allowed payment types outside dashboard.
+[2026-03-14 17:52] codex — Updated OpenAPI spec with payment-preferences request schema and path operations.
+[2026-03-14 18:08] codex — Completed notifications module with API routes, service layer, validation schema, Supabase migration, and OpenAPI entries.
+[2026-03-14 18:08] codex — Added notification service unit tests and polished seed dataset naming/content for client-ready showcase demos.

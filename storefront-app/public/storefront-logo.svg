@@ -1,0 +1,16 @@
+<svg width="640" height="180" viewBox="0 0 640 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="180" rx="24" fill="#F7FAFC"/>
+  <rect x="26" y="26" width="128" height="128" rx="28" fill="url(#sf_grad)"/>
+  <path d="M58 90H122L116 130H66L58 90Z" fill="white" fill-opacity="0.94"/>
+  <path d="M71 90V80C71 70.6112 78.6112 63 88 63H95C104.389 63 112 70.6112 112 80V90" stroke="white" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="78" cy="117" r="7" fill="#1D4ED8"/>
+  <circle cx="104" cy="117" r="7" fill="#1D4ED8"/>
+  <text x="182" y="103" fill="#0F172A" font-size="52" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Storefront</text>
+  <text x="184" y="132" fill="#334155" font-size="18" font-family="Segoe UI, Arial, sans-serif">Connected to PayForge Gateway</text>
+  <defs>
+    <linearGradient id="sf_grad" x1="26" y1="26" x2="154" y2="154" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -81,6 +81,7 @@ export function buildOpenApiSpec(origin: string): OpenApiDocument {
       { name: "Compliance", description: "Compliance automation and reporting APIs." },
       { name: "Pricing", description: "Dynamic pricing recommendation APIs." },
       { name: "Voice", description: "Voice payment command APIs with ASR/NLU interpretation." },
+      { name: "Notifications", description: "Merchant notification feed and delivery status APIs." },
       { name: "Reporting", description: "Transaction export and summary reporting." },
       { name: "Streaming", description: "Real-time transaction event stream." },
       { name: "Sandbox", description: "Testing cards and sandbox resources." },
@@ -210,6 +211,31 @@ export function buildOpenApiSpec(origin: string): OpenApiDocument {
           properties: {
             type: { type: "string", minLength: 3 },
             payload: { type: "object", additionalProperties: true }
+          }
+        },
+        CreateNotificationRequest: {
+          type: "object",
+          required: ["title", "message"],
+          properties: {
+            channel: { type: "string", enum: ["email", "sms", "dashboard", "webhook"] },
+            title: { type: "string", minLength: 3, maxLength: 120 },
+            message: { type: "string", minLength: 3, maxLength: 500 }
+          }
+        },
+        UpdateNotificationRequest: {
+          type: "object",
+          required: ["status"],
+          properties: {
+            status: { type: "string", enum: ["unread", "read"] }
+          }
+        },
+        UpdatePaymentPreferencesRequest: {
+          type: "object",
+          required: ["allowCard", "allowBank", "allowCrypto"],
+          properties: {
+            allowCard: { type: "boolean" },
+            allowBank: { type: "boolean" },
+            allowCrypto: { type: "boolean" }
           }
         }
       }
@@ -992,6 +1018,79 @@ export function buildOpenApiSpec(origin: string): OpenApiDocument {
           tags: ["Pricing"],
           security: apiKeyAuth,
           responses: { "200": { description: "Pricing recommendation" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/payment-preferences": {
+        get: {
+          summary: "Get merchant allowed payment types",
+          tags: ["Payments"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Payment preference settings" }, "401": { description: "Unauthorized" } }
+        },
+        patch: {
+          summary: "Update merchant allowed payment types",
+          tags: ["Payments"],
+          security: apiKeyAuth,
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/UpdatePaymentPreferencesRequest" }
+              }
+            }
+          },
+          responses: {
+            "200": { description: "Payment preferences updated" },
+            "400": { description: "Validation error" },
+            "401": { description: "Unauthorized" }
+          }
+        }
+      },
+      "/notifications": {
+        get: {
+          summary: "List merchant notifications",
+          tags: ["Notifications"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Notification list" }, "401": { description: "Unauthorized" } }
+        },
+        post: {
+          summary: "Create merchant notification",
+          tags: ["Notifications"],
+          security: apiKeyAuth,
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/CreateNotificationRequest" }
+              }
+            }
+          },
+          responses: {
+            "201": { description: "Notification created" },
+            "400": { description: "Validation error" },
+            "401": { description: "Unauthorized" }
+          }
+        }
+      },
+      "/notifications/{id}": {
+        patch: {
+          summary: "Update notification status",
+          tags: ["Notifications"],
+          security: apiKeyAuth,
+          parameters: [idPathParam],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/UpdateNotificationRequest" }
+              }
+            }
+          },
+          responses: {
+            "200": { description: "Notification updated" },
+            "404": { description: "Notification not found" },
+            "401": { description: "Unauthorized" }
+          }
         }
       },
       "/reporting/summary": {

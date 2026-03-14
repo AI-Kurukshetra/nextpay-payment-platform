@@ -8,6 +8,8 @@ import type {
   InvoiceRecord,
   CryptoQuoteRecord,
   MerchantRecord,
+  MerchantPaymentPreferencesRecord,
+  NotificationRecord,
   PaymentMethodRecord,
   PaymentLinkRecord,
   PaymentRecord,
@@ -49,7 +51,9 @@ export const db = {
   splitTransfers: new Map<string, SplitTransferRecord>(),
   experiments: new Map<string, ExperimentRecord>(),
   experimentAssignments: new Map<string, ExperimentAssignmentRecord>(),
-  cryptoQuotes: new Map<string, CryptoQuoteRecord>()
+  cryptoQuotes: new Map<string, CryptoQuoteRecord>(),
+  merchantPaymentPreferences: new Map<string, MerchantPaymentPreferencesRecord>(),
+  notifications: new Map<string, NotificationRecord>()
 };
 
 export function resetDb() {
@@ -77,4 +81,6 @@ export function resetDb() {
   db.experiments.clear();
   db.experimentAssignments.clear();
   db.cryptoQuotes.clear();
+  db.merchantPaymentPreferences.clear();
+  db.notifications.clear();
 }

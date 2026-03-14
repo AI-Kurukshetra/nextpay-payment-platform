@@ -11,6 +11,7 @@ import { completeThreeDSWithProvider, initiateThreeDSWithProvider } from "@/lib/
 import { authorizePaymentWithProcessor } from "@/lib/integrations/payment-processor";
 import { shouldUseSupabase } from "@/lib/persistence/mode";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getMerchantPaymentPreferences } from "@/lib/services/payment-preferences-service";
 
 function fromPaymentRow(row: {
   id: string;
@@ -56,6 +57,16 @@ export async function createPayment(
   input: CreatePaymentInput,
   idempotencyKey?: string
 ): Promise<PaymentRecord> {
+  const requestedRouteType = input.routeType ?? "card";
+  const preferences = await getMerchantPaymentPreferences(merchant);
+  const isAllowed =
+    (requestedRouteType === "card" && preferences.allowCard) ||
+    (requestedRouteType === "bank" && preferences.allowBank) ||
+    (requestedRouteType === "crypto" && preferences.allowCrypto);
+  if (!isAllowed) {
+    throw new AppError(403, "payment_type_not_allowed");
+  }
+
   const paymentCurrency = input.currency.toUpperCase();
   const settlementCurrency = (input.settlementCurrency ?? paymentCurrency).toUpperCase();
   if (!isSupportedCurrency(paymentCurrency) || !isSupportedCurrency(settlementCurrency)) {

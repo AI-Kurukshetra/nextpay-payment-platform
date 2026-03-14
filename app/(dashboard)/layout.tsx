@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { DashboardNav } from "@/components/dashboard/nav";
 import { getDashboardSessionMerchant } from "@/lib/auth/dashboard-session";
@@ -13,11 +14,20 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     <div className="mx-auto min-h-screen max-w-7xl p-4 md:p-6">
       <header className="glass sticky top-4 z-20 mb-4 rounded-2xl p-4">
         <div className="flex items-center justify-between gap-4">
-          <div>
+          <div className="flex items-center gap-3">
+            <Image
+              alt="PayForge"
+              className="h-10 w-auto rounded-md border border-slate-200 bg-white"
+              height={40}
+              src="/payforge-logo.svg"
+              width={142}
+            />
+            <div>
             <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Merchant Console</p>
             <h1 className="text-xl font-semibold" style={{ fontFamily: "var(--font-heading)" }}>
               {merchant.name} Dashboard
             </h1>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <a

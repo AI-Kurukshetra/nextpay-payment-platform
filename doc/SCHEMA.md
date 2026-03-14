@@ -8,6 +8,8 @@
 - `20260314130000_payments_extensions.sql`
 - `20260314134500_marketplace_wallet_streaming.sql`
 - `20260314143000_subscription_dunning.sql`
+- `20260314174000_merchant_payment_preferences.sql`
+- `20260314180500_notifications.sql`
 
 ## Tables
 - `merchants`
@@ -31,6 +33,8 @@
 - `sub_merchants`
 - `split_transfers`
 - `wallet_sessions`
+- `merchant_payment_preferences`
+- `notifications`
 
 ## RLS
 RLS enabled on all tables.
@@ -38,6 +42,8 @@ Current policies provide merchant-scoped `SELECT` access using `(select auth.uid
 New tables `merchant_api_keys` and `api_audit_logs` have RLS enabled; explicit policies are pending.
 New tables `disputes`, `payment_links`, and `fraud_rules` have RLS enabled; explicit policies are pending.
 New tables `sub_merchants`, `split_transfers`, and `wallet_sessions` have RLS enabled; explicit policies are pending.
+New table `merchant_payment_preferences` has RLS enabled; explicit policies are pending.
+New table `notifications` has RLS enabled; explicit policies are pending.
 `subscriptions` now includes `dunning_attempts` and `canceled_at` to support retry/cancellation workflows.
 
 ## Notes
@@ -63,3 +69,7 @@ Application supports dual runtime:
   - `wallet_sessions (merchant_id, status, created_at desc)`
 - Index added for subscription retry scheduling:
   - `subscriptions (merchant_id, status, next_billing_at)`
+- Index added for payment preference update recency:
+  - `merchant_payment_preferences (updated_at desc)`
+- Index added for merchant notification feed:
+  - `notifications (merchant_id, created_at desc)`

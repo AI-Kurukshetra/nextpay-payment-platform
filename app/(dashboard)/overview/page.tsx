@@ -1,5 +1,6 @@
 import { UniversalCheckout } from "@/components/checkout/universal-checkout";
 import { LiveTransactions } from "@/components/dashboard/live-transactions";
+import { PaymentTypeControls } from "@/components/dashboard/payment-type-controls";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { getOverviewData } from "@/lib/dashboard/data";
 
@@ -58,6 +59,8 @@ export default async function OverviewPage() {
       </div>
 
       <LiveTransactions />
+
+      <PaymentTypeControls />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <article className="glass rounded-2xl p-5">

@@ -287,3 +287,23 @@ export type CryptoQuoteRecord = {
   expiresAt: string;
   createdAt: string;
 };
+
+export type NotificationRecord = {
+  id: string;
+  merchantId: string;
+  channel: "email" | "sms" | "dashboard" | "webhook";
+  title: string;
+  message: string;
+  status: "unread" | "read";
+  createdAt: string;
+  readAt: string | null;
+};
+
+export type MerchantPaymentPreferencesRecord = {
+  merchantId: string;
+  allowCard: boolean;
+  allowBank: boolean;
+  allowCrypto: boolean;
+  createdAt: string;
+  updatedAt: string;
+};

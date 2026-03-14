@@ -225,6 +225,47 @@
 - Added dashboard-session checkout API for storefront:
   - `POST /api/v1/dashboard/storefront/checkout`
   - validates buyer + routing payload and creates payment via service layer
+- Added fully separate merchant storefront project under `storefront-app/`:
+  - own `package.json`, `tsconfig`, Next config, env template, and README
+  - independent UI app at `storefront-app/app/page.tsx`
+  - dedicated checkout API route `storefront-app/app/api/checkout/route.ts`
+  - route forwards payment creation to main gateway (`/api/v1/payments`) with `x-api-key`
+- Isolated main app tooling from separate app:
+  - root `tsconfig.json` excludes `storefront-app`
+  - root `.eslintignore` ignores `storefront-app`
+- Added merchant payment-type preference controls and enforcement:
+  - new settings service: `lib/services/payment-preferences-service.ts`
+  - new dashboard API: `GET/PATCH /api/v1/dashboard/payment-preferences`
+  - new dashboard UI component: `components/dashboard/payment-type-controls.tsx`
+  - integrated into overview page: `app/(dashboard)/overview/page.tsx`
+  - gateway enforcement in `createPayment()` for `card`/`bank`/`crypto` route type permissions
+  - error mapping: `payment_type_not_allowed`
+- Added schema + runtime support:
+  - migration `supabase/migrations/20260314174000_merchant_payment_preferences.sql`
+  - new in-memory record + map: `MerchantPaymentPreferencesRecord`, `db.merchantPaymentPreferences`
+  - Supabase query builder type support for `.upsert()`
+- Added regression test:
+  - `lib/services/payment-service.test.ts` now covers blocked payment type behavior
+- Added API-key merchant preference endpoint:
+  - `GET /api/v1/payment-preferences`
+  - `PATCH /api/v1/payment-preferences`
+  - route file: `app/api/v1/payment-preferences/route.ts`
+- Updated OpenAPI docs:
+  - schema `UpdatePaymentPreferencesRequest`
+  - documented `/payment-preferences` GET/PATCH operations
+- Added notifications API module:
+  - `GET /api/v1/notifications`
+  - `POST /api/v1/notifications`
+  - `PATCH /api/v1/notifications/{id}`
+  - route files: `app/api/v1/notifications/route.ts`, `app/api/v1/notifications/[id]/route.ts`
+  - service and validation: `lib/services/notification-service.ts`, `lib/validations/notification.ts`
+  - migration: `supabase/migrations/20260314180500_notifications.sql`
+  - OpenAPI docs: `/notifications` and `/notifications/{id}`
+- Added service unit tests for notifications:
+  - `lib/services/notification-service.test.ts`
+- Improved client showcase seed quality:
+  - polished merchant/customer names and business-style sample values in `supabase/seed.sql`
+  - updated webhook and payment link sample domains/tokens for demo realism
 - Added voice-activated payment command support:
   - `POST /api/v1/payments/voice/commands`
   - request validation in `lib/validations/voice.ts`
