@@ -31,3 +31,8 @@
 [2026-03-14 15:58] codex — Removed amount range controls from payments filters per UX direction; retained compact auto-apply search/status/currency/date filters.
 [2026-03-14 16:00] codex — Fixed filter bar overlap by switching to a responsive grid layout and pinning clear action alignment across breakpoints.
 [2026-03-14 16:14] codex — Audited ignore files and tightened `.gitignore` to prevent IDE/env/log/local-store artifacts from being pushed.
+[2026-03-14 16:26] codex — Added a merchant-accessible storefront demo page with product selection, buyer checkout form, and gateway routing options.
+[2026-03-14 16:26] codex — Added `/api/v1/dashboard/storefront/checkout` session-auth endpoint and shared storefront catalog for end-to-end payment simulation.
+[2026-03-14 16:30] codex — Implemented voice-command payment execution (`create/capture/refund`) with ASR/NLU provider adapters, fallback parsing, API route, OpenAPI docs, and unit tests.
+[2026-03-14 16:33] codex — Fixed Vercel runtime error from missing Supabase URL/key by no-oping middleware `updateSession()` when public Supabase env vars are unset.
+[2026-03-14 16:35] codex — Replaced skip behavior with strict Supabase config resolver using `NEXT_PUBLIC_*` with server-side fallback to `SUPABASE_*`, preserving hard DB requirement while fixing Vercel env-name mismatch.

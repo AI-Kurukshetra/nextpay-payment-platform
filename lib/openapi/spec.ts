@@ -80,6 +80,7 @@ export function buildOpenApiSpec(origin: string): OpenApiDocument {
       { name: "Experiments", description: "A/B testing framework APIs." },
       { name: "Compliance", description: "Compliance automation and reporting APIs." },
       { name: "Pricing", description: "Dynamic pricing recommendation APIs." },
+      { name: "Voice", description: "Voice payment command APIs with ASR/NLU interpretation." },
       { name: "Reporting", description: "Transaction export and summary reporting." },
       { name: "Streaming", description: "Real-time transaction event stream." },
       { name: "Sandbox", description: "Testing cards and sandbox resources." },
@@ -147,6 +148,17 @@ export function buildOpenApiSpec(origin: string): OpenApiDocument {
               type: "string",
               enum: ["stripe", "adyen", "razorpay", "bank_gateway", "crypto_processor"]
             },
+            metadata: { type: "object", additionalProperties: { type: "string" } }
+          }
+        },
+        VoicePaymentCommandRequest: {
+          type: "object",
+          properties: {
+            source: { type: "string", enum: ["text", "audio"], default: "text" },
+            transcript: { type: "string", minLength: 3, maxLength: 500 },
+            audioUrl: { type: "string", format: "uri" },
+            audioBase64: { type: "string", minLength: 20 },
+            idempotencyKey: { type: "string", minLength: 6, maxLength: 120 },
             metadata: { type: "object", additionalProperties: { type: "string" } }
           }
         },
@@ -332,6 +344,24 @@ export function buildOpenApiSpec(origin: string): OpenApiDocument {
           tags: ["Payments"],
           security: apiKeyAuth,
           responses: { "200": { description: "Payments list" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/payments/voice/commands": {
+        post: {
+          summary: "Execute voice payment command",
+          tags: ["Voice"],
+          security: apiKeyAuth,
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": { schema: { $ref: "#/components/schemas/VoicePaymentCommandRequest" } }
+            }
+          },
+          responses: {
+            "201": { description: "Voice command executed" },
+            "400": { description: "Validation or command parsing error" },
+            "401": { description: "Unauthorized" }
+          }
         }
       },
       "/payments/{id}": {

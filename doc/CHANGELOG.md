@@ -217,3 +217,36 @@
 - Hardened repository ignore policy in root `.gitignore`:
   - added `.env.*` with `!.env.example` allowlist
   - added `.idea`, `.vscode`, `.pnpm-store`, `.DS_Store`, and `*.log`
+- Added storefront demo webapp for buyer-flow simulation:
+  - new dashboard page: `app/(dashboard)/storefront/page.tsx`
+  - new UI component: `components/storefront/demo-storefront.tsx`
+  - navigation entry added in `components/dashboard/nav.tsx`
+  - shared product catalog: `lib/storefront/catalog.ts`
+- Added dashboard-session checkout API for storefront:
+  - `POST /api/v1/dashboard/storefront/checkout`
+  - validates buyer + routing payload and creates payment via service layer
+- Added voice-activated payment command support:
+  - `POST /api/v1/payments/voice/commands`
+  - request validation in `lib/validations/voice.ts`
+  - service orchestration in `lib/services/voice-command-service.ts` (`create_payment`, `capture_payment`, `refund_payment`)
+- Added ASR/NLU provider integration adapters with env-configured endpoints and deterministic fallback behavior:
+  - `lib/integrations/voice-provider.ts`
+  - `NEXTPAY_ASR_PROVIDER_URL`, `NEXTPAY_ASR_PROVIDER_KEY`
+  - `NEXTPAY_NLU_PROVIDER_URL`, `NEXTPAY_NLU_PROVIDER_KEY`
+- Added voice command unit tests:
+  - `lib/services/voice-command-service.test.ts`
+- Extended OpenAPI with voice command schema and endpoint documentation:
+  - `VoicePaymentCommandRequest`
+  - `/payments/voice/commands`
+- Fixed deploy/runtime resilience for environments without Supabase variables:
+  - updated `lib/supabase/middleware.ts` to skip `createServerClient` initialization when
+  `NEXT_PUBLIC_SUPABASE_URL` or `NEXT_PUBLIC_SUPABASE_ANON_KEY` is missing
+  - prevents Vercel crash: "Your project's URL and Key are required to create a Supabase client!"
+- Reworked Supabase env handling to keep DB mandatory while fixing Vercel config mismatch:
+  - added `lib/supabase/config.ts` central resolver
+  - server-side Supabase clients now resolve from:
+    - `NEXT_PUBLIC_SUPABASE_URL` or `SUPABASE_URL`
+    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` or `SUPABASE_ANON_KEY`
+  - browser client remains strict on `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - updated `lib/supabase/middleware.ts`, `lib/supabase/server.ts`, `lib/supabase/admin.ts`, `lib/supabase/client.ts`
+  - extended env declarations/examples with `SUPABASE_URL` and `SUPABASE_ANON_KEY`

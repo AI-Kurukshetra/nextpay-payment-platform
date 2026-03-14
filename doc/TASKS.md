@@ -50,7 +50,7 @@
 - [x] 2026-03-14 12:46 — Add predictive cashflow forecast API and dynamic pricing recommendation API
 
 ## Remaining
-- [ ] Implement voice-activated payment commands with ASR/NLU provider integration
+- [x] 2026-03-14 16:30 — Implement voice-activated payment commands with ASR/NLU provider integration
 - [ ] Implement biometric authentication gateway with production device attestation providers
 - [ ] Implement smart-contract based settlement executor against live chains
 - [ ] Implement IoT payment device fleet management APIs and provisioning
@@ -63,3 +63,7 @@
 - [x] 2026-03-14 15:58 — Remove amount range controls from payments UI and keep compact auto-apply search/status/currency/date filters
 - [x] 2026-03-14 16:00 — Fix payments filter layout overlap by replacing fixed-width wrap with responsive grid and clear-button alignment
 - [x] 2026-03-14 16:14 — Harden repository ignore rules for GitHub push (`.idea/.vscode/.env.*/*.log/.pnpm-store` with `.env.example` allowlist)
+- [x] 2026-03-14 16:26 — Add dashboard storefront demo webapp and checkout API to simulate buyer flow through PayForge gateway
+- [x] 2026-03-14 16:30 — Add voice-command payment API (`/api/v1/payments/voice/commands`) with ASR/NLU provider adapters and fallback parser
+- [x] 2026-03-14 16:33 — Fix Vercel deploy crash when Supabase env vars are missing by making middleware session refresh Supabase-aware
+- [x] 2026-03-14 16:35 — Replace Supabase-skip workaround with strict env resolution (`NEXT_PUBLIC_*` or `SUPABASE_*`) to keep DB mandatory on Vercel

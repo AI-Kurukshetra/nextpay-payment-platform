@@ -43,3 +43,7 @@
 - Removed amount range from dashboard filters based on product-direction feedback to keep the control strip minimal and reduce cognitive load.
 - Adopted a responsive grid layout for payments filters to prevent overlap regressions introduced by mixed fixed widths in wrapped flex rows.
 - Strengthened ignore rules before GitHub push to reduce accidental leakage of local IDE/env/log artifacts while preserving committed `.env.example`.
+- Implemented the merchant integration demo as a dashboard-hosted storefront so payment creation uses secure session-backed server routes (no API keys exposed in client code).
+- Implemented voice payments as an intent layer on top of existing payment/refund services (instead of direct DB writes) so command execution inherits established fraud, idempotency, webhook, and state-transition logic.
+- Made Supabase middleware initialization conditional on public env presence to support memory-mode/staging deployments on Vercel without forcing Supabase configuration.
+- Revised Supabase strategy: do not bypass Supabase initialization; instead, resolve server env from `NEXT_PUBLIC_*` with `SUPABASE_*` fallback and fail hard if none are present.
