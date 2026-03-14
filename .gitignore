@@ -1,0 +1,10 @@
+node_modules
+.next
+out
+coverage
+.env
+.env.local
+tsconfig.tsbuildinfo
+test-results
+playwright-report
+supabase_linux_amd64.tar.gz

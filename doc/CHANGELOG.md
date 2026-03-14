@@ -1,0 +1,58 @@
+# CHANGELOG
+
+## 2026-03-14
+- Bootstrapped Next.js 15 TypeScript project and App Router structure.
+- Added v1 API routes for auth, payments, refunds, customers, subscriptions, webhooks, fraud alerts, analytics, and sandbox cards.
+- Implemented business logic in `lib/services/` for all core modules.
+- Added validation schemas in `lib/validations/` and request guards for rate-limiting and API-key auth.
+- Added in-memory data store abstraction in `lib/store/` to support local execution.
+- Added initial Supabase migration `supabase/migrations/20260314093000_init_nextpay.sql` including RLS policies.
+- Added Supabase persistence mode via `NEXTPAY_PERSISTENCE=supabase` across service layer.
+- Added admin Supabase client and persistence mode gating for safe local fallback.
+- Added performance migration `supabase/migrations/20260314095500_performance_indexes.sql`:
+  - merchant-scoped composite indexes
+  - webhook retry queue index
+  - payment idempotency key uniqueness
+  - BRIN indexes for large time-series tables
+- Added service and validation tests (17 tests total, all passing).
+- Redesigned UI with upgraded visual system, responsive dashboard navigation, KPI surfaces, and universal checkout widget.
+- Added `doc/SESSION_RESUME.md` as a dedicated resumable handoff document for future sessions.
+- Removed unused `nuqs` dependency from `package.json` to avoid npm peer-resolution conflicts.
+- Added full login/register flows with cookie-based dashboard session:
+  - `app/(auth)/login/page.tsx`
+  - `app/(auth)/register/page.tsx`
+  - `components/auth/login-form.tsx`
+  - `components/auth/register-form.tsx`
+  - `app/api/v1/auth/session/route.ts`
+- Added dashboard server-side session gating and merchant-aware layout (`app/(dashboard)/layout.tsx`).
+- Replaced dashboard mock datasets with live service data loaders (`lib/dashboard/data.ts` + dashboard pages).
+- Added session-backed checkout mutation route (`app/api/v1/dashboard/payments/route.ts`).
+- Added database seed file (`supabase/seed.sql`) for merchant/customer/payment/subscription/webhook/fraud sample data.
+- Added OpenAPI spec builder (`lib/openapi/spec.ts`) and JSON route (`app/api/v1/openapi/route.ts`).
+- Added Swagger UI route at `app/api/docs/route.ts` with interactive docs backed by `/api/v1/openapi`.
+- Added homepage quick link to Swagger docs and documented doc URLs in `README.md`.
+- Added API key lifecycle endpoints:
+  - `GET /api/v1/auth/api-keys`
+  - `POST /api/v1/auth/api-keys/rotate`
+  - `POST /api/v1/auth/api-keys/revoke`
+  - `GET /api/v1/auth/api-keys/audit`
+- Added API key + audit log service support in `lib/services/auth-service.ts`.
+- Added worker orchestration:
+  - `POST /api/v1/internal/worker/process` (secret-protected)
+  - `POST /api/v1/subscriptions/cycles/process` (merchant-scoped trigger)
+  - `scripts/background-worker.mjs` + `pnpm worker`
+- Added subscription billing cycle processor in `lib/services/subscription-service.ts`.
+- Added webhook retry merchant scoping in `lib/services/webhook-service.ts`.
+- Added signed dashboard session token flow and middleware checks:
+  - `lib/auth/session.ts`
+  - `lib/auth/dashboard-session.ts`
+  - updated auth login/register/session routes
+  - updated `middleware.ts`
+- Added Playwright setup and E2E specs:
+  - `playwright.config.ts`
+  - `tests/e2e/merchant-auth.spec.ts`
+  - `tests/e2e/merchant-login.spec.ts`
+- Added migration `supabase/migrations/20260314110000_api_key_audit_worker.sql` for:
+  - `merchant_api_keys`
+  - `api_audit_logs`
+  - backfill of legacy merchant API keys

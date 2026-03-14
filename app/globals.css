@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f3f6f8;
+  --surface: #ffffff;
+  --surface-muted: #f7fafc;
+  --ink: #0d1b2a;
+  --ink-soft: #486581;
+  --line: #d9e2ec;
+  --brand: #0ea5a6;
+  --brand-strong: #0f766e;
+  --accent: #f59e0b;
+  --danger: #e11d48;
+}
+
+body {
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 10% -10%, #b2f5ea 0%, transparent 35%),
+    radial-gradient(circle at 90% 0%, #fde68a 0%, transparent 30%),
+    var(--bg);
+}
+
+.glass {
+  background: color-mix(in oklab, var(--surface) 84%, white);
+  backdrop-filter: blur(8px);
+  border: 1px solid color-mix(in oklab, var(--line) 90%, white);
+}

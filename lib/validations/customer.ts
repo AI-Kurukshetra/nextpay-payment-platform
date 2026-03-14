@@ -1,0 +1,8 @@
+import { z } from "zod";
+
+export const createCustomerSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(2)
+});
+
+export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;
