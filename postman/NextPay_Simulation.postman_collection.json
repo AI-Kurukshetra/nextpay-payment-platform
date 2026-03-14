@@ -1,0 +1,531 @@
+{
+  "info": {
+    "_postman_id": "f1a3d04e-3d9c-4f9f-8e08-payforge-sim-collection",
+    "name": "PayForge Simulation Collection",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Merchant",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"tester+{{$timestamp}}@example.com\",\n  \"name\": \"Pro Tester\"\n}" },
+            "url": "{{baseUrl}}/auth/register"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {"type": "text/javascript", "exec": [
+              "const json = pm.response.json();",
+              "if (json.apiKey) pm.collectionVariables.set('apiKey', json.apiKey);"
+            ]}
+          }]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "content-type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"apiKey\": \"{{apiKey}}\"\n}" },
+            "url": "{{baseUrl}}/auth/login"
+          }
+        },
+        {
+          "name": "List API Keys",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-api-key", "value": "{{apiKey}}" }],
+            "url": "{{baseUrl}}/auth/api-keys"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customers",
+      "item": [
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"customer+{{$timestamp}}@example.com\",\n  \"name\": \"Customer One\"\n}" },
+            "url": "{{baseUrl}}/customers"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {"type": "text/javascript", "exec": [
+              "const json = pm.response.json();",
+              "if (json.id) pm.collectionVariables.set('customerId', json.id);"
+            ]}
+          }]
+        },
+        {
+          "name": "List Customers",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-api-key", "value": "{{apiKey}}" }],
+            "url": "{{baseUrl}}/customers"
+          }
+        },
+        {
+          "name": "Get Customer",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-api-key", "value": "{{apiKey}}" }],
+            "url": "{{baseUrl}}/customers/{{customerId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Create Payment (Auto)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 10000,\n  \"currency\": \"USD\",\n  \"routingMode\": \"auto\",\n  \"metadata\": {\"source\": \"postman\"}\n}" },
+            "url": "{{baseUrl}}/payments"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {"type": "text/javascript", "exec": [
+              "const json = pm.response.json();",
+              "if (json.id) pm.collectionVariables.set('paymentId', json.id);"
+            ]}
+          }]
+        },
+        {
+          "name": "Create Payment (Manual Card Razorpay)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 12000,\n  \"currency\": \"INR\",\n  \"routingMode\": \"manual\",\n  \"routeType\": \"card\",\n  \"preferredProcessor\": \"razorpay\",\n  \"metadata\": {\"source\": \"postman\"}\n}" },
+            "url": "{{baseUrl}}/payments"
+          }
+        },
+        {
+          "name": "Create Payment (Manual Bank)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 13000,\n  \"currency\": \"USD\",\n  \"routingMode\": \"manual\",\n  \"routeType\": \"bank\",\n  \"preferredProcessor\": \"bank_gateway\",\n  \"metadata\": {\"source\": \"postman\"}\n}" },
+            "url": "{{baseUrl}}/payments"
+          }
+        },
+        {
+          "name": "Create Payment (Manual Crypto)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 14000,\n  \"currency\": \"EUR\",\n  \"routingMode\": \"manual\",\n  \"routeType\": \"crypto\",\n  \"preferredProcessor\": \"crypto_processor\",\n  \"metadata\": {\"source\": \"postman\"}\n}" },
+            "url": "{{baseUrl}}/payments"
+          }
+        },
+        {
+          "name": "Get Payment",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-api-key", "value": "{{apiKey}}" }],
+            "url": "{{baseUrl}}/payments/{{paymentId}}"
+          }
+        },
+        {
+          "name": "Capture Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"confirm\": true\n}" },
+            "url": "{{baseUrl}}/payments/{{paymentId}}/capture"
+          }
+        },
+        {
+          "name": "Refund Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 1000,\n  \"reason\": \"partial_refund_test\"\n}" },
+            "url": "{{baseUrl}}/payments/{{paymentId}}/refund"
+          }
+        },
+        {
+          "name": "List Payments (Filtered)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-api-key", "value": "{{apiKey}}" }],
+            "url": "{{baseUrl}}/payments?status=succeeded&currency=USD"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3DS",
+      "item": [
+        {
+          "name": "Create Payment (Require 3DS)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 9000,\n  \"currency\": \"USD\",\n  \"require3ds\": true,\n  \"metadata\": {\"flow\": \"3ds_test\"}\n}" },
+            "url": "{{baseUrl}}/payments"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {"type": "text/javascript", "exec": [
+              "const json = pm.response.json();",
+              "if (json.id) pm.collectionVariables.set('paymentId', json.id);"
+            ]}
+          }]
+        },
+        {
+          "name": "Initiate 3DS",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"returnUrl\": \"http://localhost:3000/overview\",\n  \"deviceChannel\": \"browser\"\n}" },
+            "url": "{{baseUrl}}/payments/{{paymentId}}/3ds/initiate"
+          }
+        },
+        {
+          "name": "Authenticate 3DS",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"challengeResult\": \"authenticated\",\n  \"eci\": \"05\",\n  \"dsTransactionId\": \"ds_1234567890\"\n}" },
+            "url": "{{baseUrl}}/payments/{{paymentId}}/3ds/authenticate"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        {
+          "name": "Create Wallet Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"provider\": \"apple_pay\",\n  \"amount\": 7000,\n  \"currency\": \"USD\"\n}" },
+            "url": "{{baseUrl}}/payment-methods/wallets"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {"type": "text/javascript", "exec": [
+              "const json = pm.response.json();",
+              "if (json.id) pm.collectionVariables.set('walletSessionId', json.id);"
+            ]}
+          }]
+        },
+        {
+          "name": "Authorize Wallet Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"paymentToken\": \"tok_1234567890123456\",\n  \"signature\": \"sig_12345678\"\n}" },
+            "url": "{{baseUrl}}/payment-methods/wallets/{{walletSessionId}}/authorize"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "Create Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Pro Monthly\",\n  \"amount\": 4999,\n  \"currency\": \"USD\",\n  \"interval\": \"month\",\n  \"trialDays\": 7\n}" },
+            "url": "{{baseUrl}}/subscriptions/plans"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {"type": "text/javascript", "exec": [
+              "const json = pm.response.json();",
+              "if (json.id) pm.collectionVariables.set('planId', json.id);"
+            ]}
+          }]
+        },
+        {
+          "name": "Create Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"planId\": \"{{planId}}\"\n}" },
+            "url": "{{baseUrl}}/subscriptions"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {"type": "text/javascript", "exec": [
+              "const json = pm.response.json();",
+              "if (json.id) pm.collectionVariables.set('subscriptionId', json.id);"
+            ]}
+          }]
+        },
+        {
+          "name": "Update Subscription",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"cancelAtPeriodEnd\": false,\n  \"immediate\": true,\n  \"prorationBehavior\": \"create_prorations\"\n}" },
+            "url": "{{baseUrl}}/subscriptions/{{subscriptionId}}"
+          }
+        },
+        {
+          "name": "Process Cycles",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "x-api-key", "value": "{{apiKey}}" }],
+            "url": "{{baseUrl}}/subscriptions/cycles/process"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Settlements",
+      "item": [
+        {
+          "name": "Create Settlement",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 25000,\n  \"currency\": \"USD\",\n  \"settlementCurrency\": \"USD\",\n  \"payoutMethod\": \"instant\",\n  \"destination\": \"acct_demo_123456\"\n}" },
+            "url": "{{baseUrl}}/settlements"
+          }
+        },
+        {
+          "name": "Process Settlements",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "x-worker-secret", "value": "{{workerSecret}}" }],
+            "url": "{{baseUrl}}/settlements/process"
+          }
+        },
+        {
+          "name": "List Settlements",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-api-key", "value": "{{apiKey}}" }],
+            "url": "{{baseUrl}}/settlements"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "Register Webhook Endpoint",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"url\": \"https://example.com/webhook\"\n}" },
+            "url": "{{baseUrl}}/webhooks/endpoints"
+          }
+        },
+        {
+          "name": "Emit Webhook Event",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"type\": \"payment.succeeded\",\n  \"payload\": {\"source\": \"postman\"}\n}" },
+            "url": "{{baseUrl}}/webhooks"
+          }
+        },
+        {
+          "name": "Process Webhook Retries",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "x-api-key", "value": "{{apiKey}}" }],
+            "url": "{{baseUrl}}/webhooks/retries/process"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Advanced",
+      "item": [
+        {
+          "name": "Optimization Recommendations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-api-key", "value": "{{apiKey}}" }],
+            "url": "{{baseUrl}}/optimization/recommendations"
+          }
+        },
+        {
+          "name": "GraphQL",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"query\": \"query Payments { payments }\",\n  \"variables\": {\"limit\": 10}\n}" },
+            "url": "{{baseUrl}}/graphql"
+          }
+        },
+        {
+          "name": "Create Crypto Quote",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 10000,\n  \"currency\": \"USD\",\n  \"asset\": \"BTC\"\n}" },
+            "url": "{{baseUrl}}/payments/crypto/quote"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {"type": "text/javascript", "exec": [
+              "const json = pm.response.json();",
+              "if (json.id) pm.collectionVariables.set('quoteId', json.id);"
+            ]}
+          }]
+        },
+        {
+          "name": "Confirm Crypto Quote",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"quoteId\": \"{{quoteId}}\",\n  \"walletAddress\": \"bc1qexampleaddress12345\",\n  \"txHash\": \"0xabc123def456\"\n}" },
+            "url": "{{baseUrl}}/payments/crypto/confirm"
+          }
+        },
+        {
+          "name": "Create Experiment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"checkout_button_test\",\n  \"variants\": [\"control\", \"bold_cta\"],\n  \"trafficPercent\": 100,\n  \"isActive\": true\n}" },
+            "url": "{{baseUrl}}/experiments"
+          },
+          "event": [{
+            "listen": "test",
+            "script": {"type": "text/javascript", "exec": [
+              "const json = pm.response.json();",
+              "if (json.id) pm.collectionVariables.set('experimentId', json.id);"
+            ]}
+          }]
+        },
+        {
+          "name": "Assign Experiment Variant",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"subjectKey\": \"user_123\"\n}" },
+            "url": "{{baseUrl}}/experiments/{{experimentId}}/assign"
+          }
+        },
+        {
+          "name": "Compliance Report (PCI)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-api-key", "value": "{{apiKey}}" }],
+            "url": "{{baseUrl}}/compliance/reports?framework=pci"
+          }
+        },
+        {
+          "name": "Cashflow Forecast",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-api-key", "value": "{{apiKey}}" }],
+            "url": "{{baseUrl}}/analytics/cashflow/forecast?horizonDays=14"
+          }
+        },
+        {
+          "name": "Pricing Recommendation",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "content-type", "value": "application/json" },
+              { "key": "x-api-key", "value": "{{apiKey}}" }
+            ],
+            "body": { "mode": "raw", "raw": "{\n  \"amount\": 10000,\n  \"currency\": \"USD\",\n  \"paymentMethod\": \"card\"\n}" },
+            "url": "{{baseUrl}}/pricing/recommendation"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api/v1" },
+    { "key": "apiKey", "value": "" },
+    { "key": "workerSecret", "value": "worker_secret" },
+    { "key": "customerId", "value": "" },
+    { "key": "paymentId", "value": "" },
+    { "key": "walletSessionId", "value": "" },
+    { "key": "planId", "value": "" },
+    { "key": "subscriptionId", "value": "" },
+    { "key": "quoteId", "value": "" },
+    { "key": "experimentId", "value": "" }
+  ]
+}

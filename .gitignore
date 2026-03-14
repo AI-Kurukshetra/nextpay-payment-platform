@@ -4,7 +4,14 @@ out
 coverage
 .env
 .env.local
+.env.*
+!.env.example
 tsconfig.tsbuildinfo
 test-results
 playwright-report
 supabase_linux_amd64.tar.gz
+.pnpm-store
+.idea
+.vscode
+.DS_Store
+*.log

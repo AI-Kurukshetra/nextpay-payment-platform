@@ -7,7 +7,11 @@ import type {
   WebhookEndpointRecord,
   WebhookEventRecord
 } from "@/lib/store/types";
-import type { EmitWebhookEventInput, RegisterWebhookEndpointInput } from "@/lib/validations/webhook";
+import type {
+  EmitWebhookEventInput,
+  RegisterWebhookEndpointInput,
+  UpdateWebhookEndpointInput
+} from "@/lib/validations/webhook";
 import { shouldUseSupabase } from "@/lib/persistence/mode";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 
@@ -19,6 +23,7 @@ function fromEndpointRow(row: {
   url: string;
   secret: string;
   is_active: boolean;
+  verified_at?: string | null;
   created_at: string;
 }): WebhookEndpointRecord {
   return {
@@ -27,6 +32,7 @@ function fromEndpointRow(row: {
     url: row.url,
     secret: row.secret,
     isActive: row.is_active,
+    verifiedAt: row.verified_at ?? null,
     createdAt: row.created_at
   };
 }
@@ -86,7 +92,7 @@ export async function registerWebhookEndpoint(
     const inserted = await supabase
       .from("webhook_endpoints")
       .insert(payload)
-      .select("id, merchant_id, url, secret, is_active, created_at")
+      .select("id, merchant_id, url, secret, is_active, verified_at, created_at")
       .single();
 
     if (inserted.error) {
@@ -100,6 +106,7 @@ export async function registerWebhookEndpoint(
         url: string;
         secret: string;
         is_active: boolean;
+        verified_at?: string | null;
         created_at: string;
       }
     );
@@ -111,6 +118,7 @@ export async function registerWebhookEndpoint(
     url: payload.url,
     secret: payload.secret,
     isActive: payload.is_active,
+    verifiedAt: null,
     createdAt: new Date().toISOString()
   };
 
@@ -123,7 +131,7 @@ export async function listWebhookEndpoints(merchant: MerchantRecord) {
     const supabase = getSupabaseAdminClient();
     const endpoints = await supabase
       .from("webhook_endpoints")
-      .select("id, merchant_id, url, secret, is_active, created_at")
+      .select("id, merchant_id, url, secret, is_active, verified_at, created_at")
       .eq("merchant_id", merchant.id)
       .order("created_at", { ascending: false });
 
@@ -137,11 +145,114 @@ export async function listWebhookEndpoints(merchant: MerchantRecord) {
       url: string;
       secret: string;
       is_active: boolean;
+      verified_at?: string | null;
       created_at: string;
     }>).map(fromEndpointRow);
   }
 
   return Array.from(db.webhookEndpoints.values()).filter((endpoint) => endpoint.merchantId === merchant.id);
+}
+
+export async function updateWebhookEndpoint(
+  merchant: MerchantRecord,
+  endpointId: string,
+  input: UpdateWebhookEndpointInput
+) {
+  if (!input.url && typeof input.isActive === "undefined") {
+    throw new Error("validation_error");
+  }
+
+  if (shouldUseSupabase()) {
+    const supabase = getSupabaseAdminClient();
+    const found = await supabase
+      .from("webhook_endpoints")
+      .select("id, merchant_id, url, secret, is_active, verified_at, created_at")
+      .eq("id", endpointId)
+      .eq("merchant_id", merchant.id)
+      .maybeSingle();
+
+    if (found.error) {
+      throw new Error(found.error.message);
+    }
+    if (!found.data) {
+      throw new Error("webhook_endpoint_not_found");
+    }
+
+    const updated = await supabase
+      .from("webhook_endpoints")
+      .update({
+        ...(input.url ? { url: input.url } : {}),
+        ...(typeof input.isActive === "boolean" ? { is_active: input.isActive } : {})
+      })
+      .eq("id", endpointId)
+      .eq("merchant_id", merchant.id)
+      .select("id, merchant_id, url, secret, is_active, verified_at, created_at")
+      .single();
+
+    if (updated.error) {
+      throw new Error(updated.error.message);
+    }
+
+    return fromEndpointRow(
+      updated.data as {
+        id: string;
+        merchant_id: string;
+        url: string;
+        secret: string;
+        is_active: boolean;
+        verified_at?: string | null;
+        created_at: string;
+      }
+    );
+  }
+
+  const endpoint = db.webhookEndpoints.get(endpointId);
+  if (!endpoint || endpoint.merchantId !== merchant.id) {
+    throw new Error("webhook_endpoint_not_found");
+  }
+
+  const updatedEndpoint: WebhookEndpointRecord = {
+    ...endpoint,
+    ...(input.url ? { url: input.url } : {}),
+    ...(typeof input.isActive === "boolean" ? { isActive: input.isActive } : {})
+  };
+  db.webhookEndpoints.set(endpointId, updatedEndpoint);
+  return updatedEndpoint;
+}
+
+export async function deleteWebhookEndpoint(merchant: MerchantRecord, endpointId: string) {
+  if (shouldUseSupabase()) {
+    const supabase = getSupabaseAdminClient();
+    const deleted = await supabase
+      .from("webhook_endpoints")
+      .delete()
+      .eq("id", endpointId)
+      .eq("merchant_id", merchant.id)
+      .select("id");
+
+    if (deleted.error) {
+      throw new Error(deleted.error.message);
+    }
+
+    if (!deleted.data || (deleted.data as Array<{ id: string }>).length === 0) {
+      throw new Error("webhook_endpoint_not_found");
+    }
+
+    return { deleted: true as const };
+  }
+
+  const endpoint = db.webhookEndpoints.get(endpointId);
+  if (!endpoint || endpoint.merchantId !== merchant.id) {
+    throw new Error("webhook_endpoint_not_found");
+  }
+
+  db.webhookEndpoints.delete(endpointId);
+  for (const [deliveryId, delivery] of db.webhookDeliveries.entries()) {
+    if (delivery.endpointId === endpointId) {
+      db.webhookDeliveries.delete(deliveryId);
+    }
+  }
+  return { deleted: true as const };
 }
 
 export async function emitWebhookEvent(merchant: MerchantRecord, input: EmitWebhookEventInput) {
@@ -270,7 +381,7 @@ export async function processWebhookRetries(now = new Date(), merchantId?: strin
     for (const delivery of deliveries) {
       const endpoint = await supabase
         .from("webhook_endpoints")
-        .select("id, merchant_id, url, secret, is_active, created_at")
+        .select("id, merchant_id, url, secret, is_active, verified_at, created_at")
         .eq("id", delivery.endpointId)
         .maybeSingle();
       const event = await supabase
@@ -465,4 +576,57 @@ export async function listWebhookEvents(merchant: MerchantRecord) {
   return Array.from(db.webhookEvents.values())
     .filter((event) => event.merchantId === merchant.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function verifyWebhookEndpoint(merchant: MerchantRecord, endpointId: string) {
+  const verificationPayload = {
+    challenge: randomUUID(),
+    verifiedAt: new Date().toISOString()
+  };
+
+  if (shouldUseSupabase()) {
+    const supabase = getSupabaseAdminClient();
+    const endpoint = await supabase
+      .from("webhook_endpoints")
+      .select("id, merchant_id, url, secret, is_active, verified_at, created_at")
+      .eq("id", endpointId)
+      .eq("merchant_id", merchant.id)
+      .maybeSingle();
+
+    if (endpoint.error) {
+      throw new Error(endpoint.error.message);
+    }
+    if (!endpoint.data) {
+      throw new Error("webhook_endpoint_not_found");
+    }
+
+    const updated = await supabase
+      .from("webhook_endpoints")
+      .update({ verified_at: verificationPayload.verifiedAt })
+      .eq("id", endpointId)
+      .eq("merchant_id", merchant.id);
+    if (updated.error) {
+      throw new Error(updated.error.message);
+    }
+
+    return {
+      endpointId,
+      challenge: verificationPayload.challenge,
+      verifiedAt: verificationPayload.verifiedAt
+    };
+  }
+
+  const endpoint = db.webhookEndpoints.get(endpointId);
+  if (!endpoint || endpoint.merchantId !== merchant.id) {
+    throw new Error("webhook_endpoint_not_found");
+  }
+
+  endpoint.verifiedAt = verificationPayload.verifiedAt;
+  db.webhookEndpoints.set(endpointId, endpoint);
+
+  return {
+    endpointId,
+    challenge: verificationPayload.challenge,
+    verifiedAt: verificationPayload.verifiedAt
+  };
 }

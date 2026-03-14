@@ -1,4 +1,4 @@
-type HttpMethod = "get" | "post";
+type HttpMethod = "get" | "post" | "patch" | "delete";
 
 type OpenApiOperation = {
   summary: string;
@@ -55,7 +55,7 @@ export function buildOpenApiSpec(origin: string): OpenApiDocument {
   return {
     openapi: "3.0.3",
     info: {
-      title: "NextPay API",
+      title: "PayForge API",
       version: "1.0.0",
       description: "Developer-first payment gateway API documentation."
     },
@@ -65,9 +65,23 @@ export function buildOpenApiSpec(origin: string): OpenApiDocument {
       { name: "Payments", description: "Payment creation, retrieval, capture, and refunds." },
       { name: "Customers", description: "Customer CRUD-lite endpoints." },
       { name: "Subscriptions", description: "Plan and subscription management." },
+      { name: "Payment Methods", description: "Customer payment method vault and tokenization APIs." },
+      { name: "Invoices", description: "Invoice generation and lifecycle APIs." },
+      { name: "Settlements", description: "Settlement scheduling and payout processing." },
+      { name: "Marketplace", description: "Multi-tenant sub-merchant and split transfer APIs." },
+      { name: "Payment Links", description: "Payment link generation and hosted pay flow APIs." },
+      { name: "Disputes", description: "Dispute intake and case lifecycle." },
       { name: "Webhooks", description: "Webhook endpoint/event/retry operations." },
       { name: "Fraud", description: "Fraud alert access." },
       { name: "Analytics", description: "Dashboard analytics overview." },
+      { name: "Optimization", description: "AI-powered routing and retry optimization recommendations." },
+      { name: "GraphQL", description: "GraphQL API gateway endpoint." },
+      { name: "Crypto", description: "Cryptocurrency quote and payment confirmation APIs." },
+      { name: "Experiments", description: "A/B testing framework APIs." },
+      { name: "Compliance", description: "Compliance automation and reporting APIs." },
+      { name: "Pricing", description: "Dynamic pricing recommendation APIs." },
+      { name: "Reporting", description: "Transaction export and summary reporting." },
+      { name: "Streaming", description: "Real-time transaction event stream." },
       { name: "Sandbox", description: "Testing cards and sandbox resources." },
       { name: "Dashboard", description: "Cookie-session merchant dashboard actions." },
       { name: "Workers", description: "Background worker orchestration endpoints." }
@@ -83,7 +97,7 @@ export function buildOpenApiSpec(origin: string): OpenApiDocument {
         DashboardSessionCookie: {
           type: "apiKey",
           in: "cookie",
-          name: "nextpay_dashboard_session",
+          name: "payforge_dashboard_session",
           description: "HttpOnly dashboard session cookie set by /auth/login."
         }
       },
@@ -125,6 +139,14 @@ export function buildOpenApiSpec(origin: string): OpenApiDocument {
             customerId: { type: "string", format: "uuid" },
             amount: { type: "integer", minimum: 1 },
             currency: { type: "string", minLength: 3, maxLength: 3, example: "USD" },
+            settlementCurrency: { type: "string", minLength: 3, maxLength: 3, example: "USD" },
+            require3ds: { type: "boolean", default: false },
+            routingMode: { type: "string", enum: ["auto", "manual"], default: "auto" },
+            routeType: { type: "string", enum: ["card", "bank", "crypto"], default: "card" },
+            preferredProcessor: {
+              type: "string",
+              enum: ["stripe", "adyen", "razorpay", "bank_gateway", "crypto_processor"]
+            },
             metadata: { type: "object", additionalProperties: { type: "string" } }
           }
         },
@@ -338,6 +360,32 @@ export function buildOpenApiSpec(origin: string): OpenApiDocument {
           }
         }
       },
+      "/payments/{id}/3ds/authenticate": {
+        post: {
+          summary: "Submit 3DS authentication result",
+          tags: ["Payments"],
+          security: apiKeyAuth,
+          parameters: [idPathParam],
+          responses: {
+            "200": { description: "Payment 3DS metadata updated" },
+            "401": { description: "Unauthorized" },
+            "404": { description: "Payment not found" }
+          }
+        }
+      },
+      "/payments/{id}/3ds/initiate": {
+        post: {
+          summary: "Initiate 3DS challenge flow",
+          tags: ["Payments"],
+          security: apiKeyAuth,
+          parameters: [idPathParam],
+          responses: {
+            "200": { description: "3DS challenge initialized" },
+            "401": { description: "Unauthorized" },
+            "404": { description: "Payment not found" }
+          }
+        }
+      },
       "/payments/{id}/refund": {
         post: {
           summary: "Create refund for a payment",
@@ -355,6 +403,27 @@ export function buildOpenApiSpec(origin: string): OpenApiDocument {
             "400": { description: "Validation or business rule error" },
             "401": { description: "Unauthorized" }
           }
+        }
+      },
+      "/payments/{id}/routing": {
+        get: {
+          summary: "Get routing explainability details for payment",
+          tags: ["Payments"],
+          security: apiKeyAuth,
+          parameters: [idPathParam],
+          responses: {
+            "200": { description: "Routing decision details" },
+            "401": { description: "Unauthorized" },
+            "404": { description: "Payment not found" }
+          }
+        }
+      },
+      "/refunds": {
+        get: {
+          summary: "List refunds",
+          tags: ["Payments"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Refund list" }, "401": { description: "Unauthorized" } }
         }
       },
       "/customers": {
@@ -455,6 +524,212 @@ export function buildOpenApiSpec(origin: string): OpenApiDocument {
           }
         }
       },
+      "/payment-links": {
+        post: {
+          summary: "Create payment link",
+          tags: ["Payment Links"],
+          security: apiKeyAuth,
+          responses: {
+            "201": { description: "Payment link created" },
+            "401": { description: "Unauthorized" }
+          }
+        },
+        get: {
+          summary: "List payment links",
+          tags: ["Payment Links"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Payment link list" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/payment-links/{token}": {
+        get: {
+          summary: "Get payment link by token",
+          tags: ["Payment Links"],
+          responses: { "200": { description: "Payment link details" }, "404": { description: "Not found" } }
+        },
+        post: {
+          summary: "Create payment from link token",
+          tags: ["Payment Links"],
+          responses: {
+            "201": { description: "Payment created from link" },
+            "404": { description: "Link not found" },
+            "409": { description: "Expired or exhausted link" }
+          }
+        }
+      },
+      "/payment-methods": {
+        post: {
+          summary: "Create payment method token",
+          tags: ["Payment Methods"],
+          security: apiKeyAuth,
+          responses: { "201": { description: "Payment method created" }, "401": { description: "Unauthorized" } }
+        },
+        get: {
+          summary: "List payment methods",
+          tags: ["Payment Methods"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Payment methods list" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/payment-methods/wallets": {
+        post: {
+          summary: "Create mobile wallet payment session",
+          tags: ["Payment Methods"],
+          security: apiKeyAuth,
+          responses: { "201": { description: "Wallet session created" }, "401": { description: "Unauthorized" } }
+        },
+        get: {
+          summary: "List wallet sessions",
+          tags: ["Payment Methods"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Wallet session list" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/payment-methods/wallets/{id}/authorize": {
+        post: {
+          summary: "Authorize mobile wallet session",
+          tags: ["Payment Methods"],
+          security: apiKeyAuth,
+          parameters: [idPathParam],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["paymentToken"],
+                  properties: {
+                    paymentToken: { type: "string", minLength: 12 },
+                    signature: { type: "string", minLength: 8 }
+                  }
+                }
+              }
+            }
+          },
+          responses: { "200": { description: "Wallet session authorized" }, "404": { description: "Not found" } }
+        }
+      },
+      "/invoices": {
+        post: {
+          summary: "Create invoice",
+          tags: ["Invoices"],
+          security: apiKeyAuth,
+          responses: { "201": { description: "Invoice created" }, "401": { description: "Unauthorized" } }
+        },
+        get: {
+          summary: "List invoices",
+          tags: ["Invoices"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Invoices list" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/invoices/{id}": {
+        post: {
+          summary: "Update invoice status",
+          tags: ["Invoices"],
+          security: apiKeyAuth,
+          parameters: [idPathParam],
+          responses: { "200": { description: "Invoice updated" }, "404": { description: "Not found" } }
+        }
+      },
+      "/settlements": {
+        post: {
+          summary: "Create settlement request",
+          tags: ["Settlements"],
+          security: apiKeyAuth,
+          responses: { "201": { description: "Settlement created" }, "401": { description: "Unauthorized" } }
+        },
+        get: {
+          summary: "List settlements",
+          tags: ["Settlements"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Settlements list" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/settlements/process": {
+        post: {
+          summary: "Process due settlements",
+          tags: ["Settlements"],
+          parameters: [
+            {
+              name: "x-worker-secret",
+              in: "header",
+              required: true,
+              schema: { type: "string" }
+            }
+          ],
+          responses: { "200": { description: "Settlement processing summary" } }
+        }
+      },
+      "/marketplace/sub-merchants": {
+        post: {
+          summary: "Create sub-merchant",
+          tags: ["Marketplace"],
+          security: apiKeyAuth,
+          responses: { "201": { description: "Sub-merchant created" }, "401": { description: "Unauthorized" } }
+        },
+        get: {
+          summary: "List sub-merchants",
+          tags: ["Marketplace"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Sub-merchant list" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/marketplace/splits/preview": {
+        post: {
+          summary: "Preview split allocations for a payment",
+          tags: ["Marketplace"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Split preview" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/marketplace/splits/execute": {
+        post: {
+          summary: "Execute split transfers",
+          tags: ["Marketplace"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Split transfers executed" }, "401": { description: "Unauthorized" } }
+        },
+        get: {
+          summary: "List split transfers",
+          tags: ["Marketplace"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Split transfer list" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/disputes": {
+        post: {
+          summary: "Create dispute",
+          tags: ["Disputes"],
+          security: apiKeyAuth,
+          responses: {
+            "201": { description: "Dispute created" },
+            "401": { description: "Unauthorized" }
+          }
+        },
+        get: {
+          summary: "List disputes",
+          tags: ["Disputes"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Disputes list" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/disputes/{id}": {
+        get: {
+          summary: "Get dispute by ID",
+          tags: ["Disputes"],
+          security: apiKeyAuth,
+          parameters: [idPathParam],
+          responses: { "200": { description: "Dispute details" }, "404": { description: "Not found" } }
+        },
+        post: {
+          summary: "Update dispute status/evidence",
+          tags: ["Disputes"],
+          security: apiKeyAuth,
+          parameters: [idPathParam],
+          responses: { "200": { description: "Dispute updated" }, "404": { description: "Not found" } }
+        }
+      },
       "/subscriptions/cycles/process": {
         post: {
           summary: "Process due subscription billing cycles for authenticated merchant",
@@ -488,6 +763,44 @@ export function buildOpenApiSpec(origin: string): OpenApiDocument {
           tags: ["Webhooks"],
           security: apiKeyAuth,
           responses: { "200": { description: "Endpoints list" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/webhooks/endpoints/{id}": {
+        patch: {
+          summary: "Update webhook endpoint",
+          tags: ["Webhooks"],
+          security: apiKeyAuth,
+          parameters: [idPathParam],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    url: { type: "string", format: "uri" },
+                    isActive: { type: "boolean" }
+                  }
+                }
+              }
+            }
+          },
+          responses: {
+            "200": { description: "Webhook endpoint updated" },
+            "400": { description: "Validation error" },
+            "401": { description: "Unauthorized" }
+          }
+        },
+        delete: {
+          summary: "Delete webhook endpoint",
+          tags: ["Webhooks"],
+          security: apiKeyAuth,
+          parameters: [idPathParam],
+          responses: {
+            "200": { description: "Webhook endpoint deleted" },
+            "401": { description: "Unauthorized" },
+            "404": { description: "Endpoint not found" }
+          }
         }
       },
       "/webhooks": {
@@ -533,12 +846,146 @@ export function buildOpenApiSpec(origin: string): OpenApiDocument {
           responses: { "200": { description: "Fraud alerts list" }, "401": { description: "Unauthorized" } }
         }
       },
+      "/fraud/rules": {
+        post: {
+          summary: "Create fraud rule",
+          tags: ["Fraud"],
+          security: apiKeyAuth,
+          responses: { "201": { description: "Rule created" }, "401": { description: "Unauthorized" } }
+        },
+        get: {
+          summary: "List fraud rules",
+          tags: ["Fraud"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Rules list" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/fraud/rules/{id}": {
+        post: {
+          summary: "Update fraud rule",
+          tags: ["Fraud"],
+          security: apiKeyAuth,
+          parameters: [idPathParam],
+          responses: { "200": { description: "Rule updated" }, "404": { description: "Not found" } }
+        }
+      },
       "/analytics/overview": {
         get: {
           summary: "Analytics overview",
           tags: ["Analytics"],
           security: apiKeyAuth,
           responses: { "200": { description: "Analytics summary" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/analytics/method-performance": {
+        get: {
+          summary: "Payment method and processor performance metrics",
+          tags: ["Analytics"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Performance metrics" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/analytics/cashflow/forecast": {
+        get: {
+          summary: "Predictive cashflow forecast",
+          tags: ["Analytics"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Cashflow forecast" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/optimization/recommendations": {
+        get: {
+          summary: "AI-powered payment routing recommendations",
+          tags: ["Optimization"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Optimization recommendations" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/graphql": {
+        post: {
+          summary: "GraphQL gateway endpoint",
+          tags: ["GraphQL"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "GraphQL response" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/payments/crypto/quote": {
+        post: {
+          summary: "Create cryptocurrency payment quote",
+          tags: ["Crypto"],
+          security: apiKeyAuth,
+          responses: { "201": { description: "Crypto quote created" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/payments/crypto/confirm": {
+        post: {
+          summary: "Confirm cryptocurrency payment quote",
+          tags: ["Crypto"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Crypto payment confirmed" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/experiments": {
+        post: {
+          summary: "Create A/B experiment",
+          tags: ["Experiments"],
+          security: apiKeyAuth,
+          responses: { "201": { description: "Experiment created" }, "401": { description: "Unauthorized" } }
+        },
+        get: {
+          summary: "List A/B experiments",
+          tags: ["Experiments"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Experiment list" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/experiments/{id}/assign": {
+        post: {
+          summary: "Assign subject to experiment variant",
+          tags: ["Experiments"],
+          security: apiKeyAuth,
+          parameters: [idPathParam],
+          responses: { "200": { description: "Variant assignment" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/compliance/reports": {
+        get: {
+          summary: "Generate compliance framework report",
+          tags: ["Compliance"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Compliance report" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/pricing/recommendation": {
+        post: {
+          summary: "Get dynamic pricing recommendation",
+          tags: ["Pricing"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Pricing recommendation" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/reporting/summary": {
+        get: {
+          summary: "Payments reporting summary",
+          tags: ["Reporting"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Summary report" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/reporting/transactions/export": {
+        get: {
+          summary: "Export transactions CSV",
+          tags: ["Reporting"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "CSV payload" }, "401": { description: "Unauthorized" } }
+        }
+      },
+      "/stream/transactions": {
+        get: {
+          summary: "SSE stream of transaction updates",
+          tags: ["Streaming"],
+          security: apiKeyAuth,
+          responses: { "200": { description: "Event stream" }, "401": { description: "Unauthorized" } }
         }
       },
       "/sandbox/cards": {

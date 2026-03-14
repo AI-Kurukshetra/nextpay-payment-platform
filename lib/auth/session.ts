@@ -1,4 +1,4 @@
-export const DASHBOARD_SESSION_COOKIE = "nextpay_dashboard_session";
+export const DASHBOARD_SESSION_COOKIE = "payforge_dashboard_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
 
 export type DashboardSessionMerchant = {
@@ -19,7 +19,7 @@ function getSessionSecret() {
     throw new Error("missing_session_secret");
   }
 
-  return process.env.NEXTPAY_SESSION_SECRET ?? "nextpay-dev-session-secret";
+  return process.env.NEXTPAY_SESSION_SECRET ?? "payforge-dev-session-secret";
 }
 
 function simpleHash(input: string) {

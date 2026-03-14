@@ -1,6 +1,6 @@
 import { getSubscriptionsData } from "@/lib/dashboard/data";
 
-export const metadata = { title: "Subscriptions | NextPay" };
+export const metadata = { title: "Subscriptions | PayForge" };
 
 export default async function SubscriptionsPage() {
   const { isConfigured, subscriptions } = await getSubscriptionsData();

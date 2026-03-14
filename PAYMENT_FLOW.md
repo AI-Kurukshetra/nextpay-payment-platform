@@ -1,5 +1,5 @@
 Customer → Merchant Website
-        → NextPay Checkout
+        → PayForge Checkout
         → Payment Intent Created
         → Payment Processor
         → Transaction Stored

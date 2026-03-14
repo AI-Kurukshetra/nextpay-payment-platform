@@ -16,7 +16,7 @@ export default function HomePage() {
         <div className="absolute -right-16 -top-20 h-44 w-44 rounded-full bg-cyan-200/60 blur-2xl" />
         <div className="absolute -bottom-16 left-8 h-40 w-40 rounded-full bg-amber-200/70 blur-2xl" />
 
-        <p className="text-sm uppercase tracking-[0.2em] text-cyan-700">NextPay Platform</p>
+        <p className="text-sm uppercase tracking-[0.2em] text-cyan-700">PayForge Platform</p>
         <h1 className="mt-2 max-w-2xl text-4xl font-semibold leading-tight md:text-6xl" style={{ fontFamily: "var(--font-heading)" }}>
           Payments Infra That Feels Instant For Developers And Merchants
         </h1>

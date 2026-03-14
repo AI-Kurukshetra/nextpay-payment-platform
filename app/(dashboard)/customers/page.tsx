@@ -1,6 +1,6 @@
 import { getCustomersData } from "@/lib/dashboard/data";
 
-export const metadata = { title: "Customers | NextPay" };
+export const metadata = { title: "Customers | PayForge" };
 
 export default async function CustomersPage() {
   const { isConfigured, customers } = await getCustomersData();

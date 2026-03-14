@@ -1,4 +1,4 @@
--- NextPay seed data
+-- PayForge seed data
 -- Seed API key for dashboard and testing:
 -- np_live_seed_demo_key_123
 
@@ -7,7 +7,7 @@ values
   (
     '11111111-1111-1111-1111-111111111111',
     'Acme Payments',
-    'merchant@nextpay.dev',
+    'merchant@payforge.dev',
     'ec7fbea803dbc35b8468b23cbbcf93074ffcf298ecac107593edf48d95a70d76'
   )
 on conflict (id) do nothing;

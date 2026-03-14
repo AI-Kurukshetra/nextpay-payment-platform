@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toReadableErrorMessage } from "@/lib/ui/error-message";
 
 export function LoginForm() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export function LoginForm() {
 
       const result = await response.json();
       if (!response.ok) {
-        setError(result.error ?? "login_failed");
+        setError(toReadableErrorMessage(result.error ?? "login_failed"));
         return;
       }
 

@@ -13,5 +13,13 @@ export const createSubscriptionSchema = z.object({
   planId: z.string().uuid()
 });
 
+export const updateSubscriptionSchema = z.object({
+  planId: z.string().uuid().optional(),
+  immediate: z.boolean().default(false),
+  prorationBehavior: z.enum(["none", "create_prorations"]).default("create_prorations"),
+  cancelAtPeriodEnd: z.boolean().default(false)
+});
+
 export type CreateSubscriptionPlanInput = z.infer<typeof createSubscriptionPlanSchema>;
 export type CreateSubscriptionInput = z.infer<typeof createSubscriptionSchema>;
+export type UpdateSubscriptionInput = z.infer<typeof updateSubscriptionSchema>;

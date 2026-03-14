@@ -4,12 +4,25 @@ import { db } from "@/lib/store/database";
 import type { MerchantRecord, SubscriptionPlanRecord, SubscriptionRecord } from "@/lib/store/types";
 import type {
   CreateSubscriptionInput,
-  CreateSubscriptionPlanInput
+  CreateSubscriptionPlanInput,
+  UpdateSubscriptionInput
 } from "@/lib/validations/subscription";
 import { shouldUseSupabase } from "@/lib/persistence/mode";
 import { getSupabaseAdminClient } from "@/lib/supabase/admin";
 import { capturePayment, createPayment } from "@/lib/services/payment-service";
 import { emitWebhookEvent } from "@/lib/services/webhook-service";
+
+const subscriptionSelectWithDunning =
+  "id, merchant_id, customer_id, plan_id, status, next_billing_at, trial_ends_at, dunning_attempts, canceled_at, created_at";
+const subscriptionSelectBase =
+  "id, merchant_id, customer_id, plan_id, status, next_billing_at, trial_ends_at, created_at";
+
+function isMissingDunningColumnsError(message: string) {
+  return (
+    (message.includes("dunning_attempts") && message.includes("does not exist")) ||
+    (message.includes("canceled_at") && message.includes("does not exist"))
+  );
+}
 
 function fromPlanRow(row: {
   id: string;
@@ -57,6 +70,8 @@ function fromSubscriptionRow(row: {
   status: SubscriptionRecord["status"];
   next_billing_at: string;
   trial_ends_at: string | null;
+  dunning_attempts?: number;
+  canceled_at?: string | null;
   created_at: string;
 }): SubscriptionRecord {
   return {
@@ -67,6 +82,8 @@ function fromSubscriptionRow(row: {
     status: row.status,
     nextBillingAt: row.next_billing_at,
     trialEndsAt: row.trial_ends_at,
+    dunningAttempts: row.dunning_attempts ?? 0,
+    canceledAt: row.canceled_at ?? null,
     createdAt: row.created_at
   };
 }
@@ -204,7 +221,7 @@ export async function createSubscription(
 
   if (shouldUseSupabase()) {
     const supabase = getSupabaseAdminClient();
-    const inserted = await supabase
+    let inserted = await supabase
       .from("subscriptions")
       .insert({
         id: randomUUID(),
@@ -213,10 +230,28 @@ export async function createSubscription(
         plan_id: input.planId,
         status: trialEndsAt ? "trialing" : "active",
         next_billing_at: nextBillingAt,
-        trial_ends_at: trialEndsAt
+        trial_ends_at: trialEndsAt,
+        dunning_attempts: 0,
+        canceled_at: null
       })
-      .select("id, merchant_id, customer_id, plan_id, status, next_billing_at, trial_ends_at, created_at")
+      .select(subscriptionSelectWithDunning)
       .single();
+
+    if (inserted.error && isMissingDunningColumnsError(inserted.error.message)) {
+      inserted = await supabase
+        .from("subscriptions")
+        .insert({
+          id: randomUUID(),
+          merchant_id: merchant.id,
+          customer_id: input.customerId,
+          plan_id: input.planId,
+          status: trialEndsAt ? "trialing" : "active",
+          next_billing_at: nextBillingAt,
+          trial_ends_at: trialEndsAt
+        })
+        .select(subscriptionSelectBase)
+        .single();
+    }
 
     if (inserted.error) {
       throw new Error(inserted.error.message);
@@ -231,6 +266,8 @@ export async function createSubscription(
         status: SubscriptionRecord["status"];
         next_billing_at: string;
         trial_ends_at: string | null;
+        dunning_attempts?: number;
+        canceled_at?: string | null;
         created_at: string;
       }
     );
@@ -244,6 +281,8 @@ export async function createSubscription(
     status: trialEndsAt ? "trialing" : "active",
     nextBillingAt,
     trialEndsAt,
+    dunningAttempts: 0,
+    canceledAt: null,
     createdAt: new Date().toISOString()
   };
 
@@ -254,12 +293,21 @@ export async function createSubscription(
 export async function getSubscriptionById(merchant: MerchantRecord, subscriptionId: string) {
   if (shouldUseSupabase()) {
     const supabase = getSupabaseAdminClient();
-    const subscription = await supabase
+    let subscription = await supabase
       .from("subscriptions")
-      .select("id, merchant_id, customer_id, plan_id, status, next_billing_at, trial_ends_at, created_at")
+      .select(subscriptionSelectWithDunning)
       .eq("merchant_id", merchant.id)
       .eq("id", subscriptionId)
       .maybeSingle();
+
+    if (subscription.error && isMissingDunningColumnsError(subscription.error.message)) {
+      subscription = await supabase
+        .from("subscriptions")
+        .select(subscriptionSelectBase)
+        .eq("merchant_id", merchant.id)
+        .eq("id", subscriptionId)
+        .maybeSingle();
+    }
 
     if (subscription.error) {
       throw new Error(subscription.error.message);
@@ -278,6 +326,8 @@ export async function getSubscriptionById(merchant: MerchantRecord, subscription
         status: SubscriptionRecord["status"];
         next_billing_at: string;
         trial_ends_at: string | null;
+        dunning_attempts?: number;
+        canceled_at?: string | null;
         created_at: string;
       }
     );
@@ -294,11 +344,19 @@ export async function getSubscriptionById(merchant: MerchantRecord, subscription
 export async function listSubscriptions(merchant: MerchantRecord) {
   if (shouldUseSupabase()) {
     const supabase = getSupabaseAdminClient();
-    const subscriptions = await supabase
+    let subscriptions = await supabase
       .from("subscriptions")
-      .select("id, merchant_id, customer_id, plan_id, status, next_billing_at, trial_ends_at, created_at")
+      .select(subscriptionSelectWithDunning)
       .eq("merchant_id", merchant.id)
       .order("created_at", { ascending: false });
+
+    if (subscriptions.error && isMissingDunningColumnsError(subscriptions.error.message)) {
+      subscriptions = await supabase
+        .from("subscriptions")
+        .select(subscriptionSelectBase)
+        .eq("merchant_id", merchant.id)
+        .order("created_at", { ascending: false });
+    }
 
     if (subscriptions.error) {
       throw new Error(subscriptions.error.message);
@@ -312,6 +370,8 @@ export async function listSubscriptions(merchant: MerchantRecord) {
       status: SubscriptionRecord["status"];
       next_billing_at: string;
       trial_ends_at: string | null;
+      dunning_attempts?: number;
+      canceled_at?: string | null;
       created_at: string;
     }>).map(fromSubscriptionRow);
   }
@@ -321,6 +381,178 @@ export async function listSubscriptions(merchant: MerchantRecord) {
   );
 }
 
+export async function updateSubscription(
+  merchant: MerchantRecord,
+  subscriptionId: string,
+  input: UpdateSubscriptionInput
+) {
+  const subscription = await getSubscriptionById(merchant, subscriptionId);
+  let plan: SubscriptionPlanRecord | undefined;
+  if (shouldUseSupabase()) {
+    const supabase = getSupabaseAdminClient();
+    const planRes = await supabase
+      .from("subscription_plans")
+      .select("id, merchant_id, name, amount, currency, interval, trial_days, created_at")
+      .eq("merchant_id", merchant.id)
+      .eq("id", subscription.planId)
+      .maybeSingle();
+    if (planRes.error || !planRes.data) {
+      throw new AppError(404, "subscription_plan_not_found");
+    }
+    plan = fromPlanRow(
+      planRes.data as {
+        id: string;
+        merchant_id: string;
+        name: string;
+        amount: number;
+        currency: string;
+        interval: "month" | "year";
+        trial_days: number;
+        created_at: string;
+      }
+    );
+  } else {
+    plan = db.subscriptionPlans.get(subscription.planId);
+  }
+
+  if (!plan || plan.merchantId !== merchant.id) {
+    throw new AppError(404, "subscription_plan_not_found");
+  }
+
+  if (!input.planId && !input.cancelAtPeriodEnd) {
+    return subscription;
+  }
+
+  let updatedPlanId = subscription.planId;
+  let prorationAmount = 0;
+
+  if (input.planId && input.planId !== subscription.planId) {
+    let nextPlan: SubscriptionPlanRecord | undefined;
+    if (shouldUseSupabase()) {
+      const supabase = getSupabaseAdminClient();
+      const nextRes = await supabase
+        .from("subscription_plans")
+        .select("id, merchant_id, name, amount, currency, interval, trial_days, created_at")
+        .eq("merchant_id", merchant.id)
+        .eq("id", input.planId)
+        .maybeSingle();
+      if (nextRes.error || !nextRes.data) {
+        throw new AppError(404, "subscription_plan_not_found");
+      }
+      nextPlan = fromPlanRow(
+        nextRes.data as {
+          id: string;
+          merchant_id: string;
+          name: string;
+          amount: number;
+          currency: string;
+          interval: "month" | "year";
+          trial_days: number;
+          created_at: string;
+        }
+      );
+    } else {
+      nextPlan = db.subscriptionPlans.get(input.planId);
+    }
+    if (!nextPlan || nextPlan.merchantId !== merchant.id) {
+      throw new AppError(404, "subscription_plan_not_found");
+    }
+
+    if (input.prorationBehavior === "create_prorations") {
+      const now = Date.now();
+      const periodEnd = new Date(subscription.nextBillingAt).getTime();
+      const periodStart = new Date(subscription.createdAt).getTime();
+      const elapsedRatio = periodEnd <= periodStart ? 1 : Math.min(1, Math.max(0, (now - periodStart) / (periodEnd - periodStart)));
+      const remainingRatio = 1 - elapsedRatio;
+      prorationAmount = Math.round((nextPlan.amount - plan.amount) * remainingRatio);
+    }
+
+    updatedPlanId = nextPlan.id;
+    plan = nextPlan;
+  }
+
+  const updated: SubscriptionRecord = {
+    ...subscription,
+    planId: updatedPlanId,
+    status: input.cancelAtPeriodEnd ? "canceled" : subscription.status,
+    canceledAt: input.cancelAtPeriodEnd ? new Date().toISOString() : null
+  };
+
+  if (shouldUseSupabase()) {
+    const supabase = getSupabaseAdminClient();
+    const updatedRes = await supabase
+      .from("subscriptions")
+      .update({
+        plan_id: updated.planId,
+        status: updated.status,
+        canceled_at: updated.canceledAt
+      })
+      .eq("merchant_id", merchant.id)
+      .eq("id", updated.id)
+      .select(subscriptionSelectWithDunning)
+      .single();
+
+    const finalUpdated =
+      updatedRes.error && isMissingDunningColumnsError(updatedRes.error.message)
+        ? await supabase
+            .from("subscriptions")
+            .update({
+              plan_id: updated.planId,
+              status: updated.status
+            })
+            .eq("merchant_id", merchant.id)
+            .eq("id", updated.id)
+            .select(subscriptionSelectBase)
+            .single()
+        : updatedRes;
+
+    if (finalUpdated.error) {
+      throw new Error(finalUpdated.error.message);
+    }
+    Object.assign(
+      updated,
+      fromSubscriptionRow(
+        finalUpdated.data as {
+          id: string;
+          merchant_id: string;
+          customer_id: string;
+          plan_id: string;
+          status: SubscriptionRecord["status"];
+          next_billing_at: string;
+          trial_ends_at: string | null;
+          dunning_attempts?: number;
+          canceled_at?: string | null;
+          created_at: string;
+        }
+      )
+    );
+  } else {
+    db.subscriptions.set(updated.id, updated);
+  }
+
+  if (input.immediate && prorationAmount > 0) {
+    const payment = await createPayment(
+      merchant,
+      {
+        customerId: updated.customerId,
+        amount: prorationAmount,
+        currency: plan.currency,
+        metadata: {
+          source: "subscription_proration",
+          subscriptionId: updated.id
+        }
+      },
+      `sub-proration:${updated.id}:${Date.now()}`
+    );
+
+    if (payment.status === "authorized") {
+      await capturePayment(merchant, payment.id);
+    }
+  }
+
+  return updated;
+}
+
 function nextBillingTimestamp(current: string, interval: "month" | "year") {
   const base = new Date(current);
   const days = interval === "month" ? 30 : 365;
@@ -328,6 +560,7 @@ function nextBillingTimestamp(current: string, interval: "month" | "year") {
 }
 
 export async function processSubscriptionBillingCycles(now = new Date(), merchantId?: string) {
+  const maxDunningAttempts = Number(process.env.NEXTPAY_MAX_DUNNING_ATTEMPTS ?? "3");
   let processed = 0;
   let charged = 0;
   let pastDue = 0;
@@ -359,11 +592,15 @@ export async function processSubscriptionBillingCycles(now = new Date(), merchan
 
       if (shouldUseSupabase()) {
         const supabase = getSupabaseAdminClient();
+        const nextAttempts = (subscription.dunningAttempts ?? 0) + 1;
+        const nextStatus = nextAttempts >= maxDunningAttempts ? "canceled" : "past_due";
         const updated = await supabase
           .from("subscriptions")
           .update({
-            status: "past_due",
-            next_billing_at: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString()
+            status: nextStatus,
+            next_billing_at: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+            dunning_attempts: nextAttempts,
+            canceled_at: nextStatus === "canceled" ? now.toISOString() : null
           })
           .eq("id", subscription.id);
         if (updated.error) {
@@ -372,7 +609,9 @@ export async function processSubscriptionBillingCycles(now = new Date(), merchan
       } else {
         const existing = db.subscriptions.get(subscription.id);
         if (existing) {
-          existing.status = "past_due";
+          existing.dunningAttempts += 1;
+          existing.status = existing.dunningAttempts >= maxDunningAttempts ? "canceled" : "past_due";
+          existing.canceledAt = existing.status === "canceled" ? now.toISOString() : null;
           existing.nextBillingAt = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
           db.subscriptions.set(existing.id, existing);
         }
@@ -396,7 +635,9 @@ export async function processSubscriptionBillingCycles(now = new Date(), merchan
         .update({
           status: "active",
           next_billing_at: nextBillingAt,
-          trial_ends_at: null
+          trial_ends_at: null,
+          dunning_attempts: 0,
+          canceled_at: null
         })
         .eq("id", subscription.id);
       if (updated.error) {
@@ -408,6 +649,8 @@ export async function processSubscriptionBillingCycles(now = new Date(), merchan
         existing.status = "active";
         existing.nextBillingAt = nextBillingAt;
         existing.trialEndsAt = null;
+        existing.dunningAttempts = 0;
+        existing.canceledAt = null;
         db.subscriptions.set(existing.id, existing);
       }
     }
@@ -417,14 +660,24 @@ export async function processSubscriptionBillingCycles(now = new Date(), merchan
     const supabase = getSupabaseAdminClient();
     let query = supabase
       .from("subscriptions")
-      .select("id, merchant_id, customer_id, plan_id, status, next_billing_at, trial_ends_at, created_at")
+      .select(subscriptionSelectWithDunning)
       .in("status", ["active", "trialing", "past_due"]);
 
     if (merchantId) {
       query = query.eq("merchant_id", merchantId);
     }
 
-    const due = await query;
+    let due = await query;
+    if (due.error && isMissingDunningColumnsError(due.error.message)) {
+      let fallbackQuery = supabase
+        .from("subscriptions")
+        .select(subscriptionSelectBase)
+        .in("status", ["active", "trialing", "past_due"]);
+      if (merchantId) {
+        fallbackQuery = fallbackQuery.eq("merchant_id", merchantId);
+      }
+      due = await fallbackQuery;
+    }
     if (due.error) {
       throw new Error(due.error.message);
     }
@@ -437,6 +690,8 @@ export async function processSubscriptionBillingCycles(now = new Date(), merchan
       status: SubscriptionRecord["status"];
       next_billing_at: string;
       trial_ends_at: string | null;
+      dunning_attempts?: number;
+      canceled_at?: string | null;
       created_at: string;
     }>)
       .map(fromSubscriptionRow)

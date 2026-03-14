@@ -2,7 +2,7 @@ import Link from "next/link";
 import { LoginForm } from "@/components/auth/login-form";
 
 export const metadata = {
-  title: "Login | NextPay"
+  title: "Login | PayForge"
 };
 
 export default function LoginPage() {

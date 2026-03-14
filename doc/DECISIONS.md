@@ -19,3 +19,27 @@
 - Added secret-protected worker orchestration endpoint so retries and billing cycles can run from cron/queue executors without coupling to UI traffic.
 - Switched dashboard cookie from raw API key to signed merchant session payload to avoid exposing long-lived API credentials in session cookies.
 - Configured Playwright to run against built server + local Chrome channel for deterministic local E2E execution in this environment.
+- Implemented dispute and payment-link APIs as first-class resources to reduce gap to gateway blueprint while keeping services modular.
+- Added query-based payment filtering + CSV export as the base reporting surface before heavy BI/warehouse integrations.
+- Chose memory-first fallback behavior for newly added modules where Supabase tables may not yet exist, preventing runtime blockers during staged migration rollout.
+- Added marketplace splits, wallet sessions, and 3DS endpoints as feature-complete API scaffolding before external processor integrations.
+- Started with SSE for real-time transaction updates (rather than WebSocket infra) to keep operational complexity low for MVP.
+- Pushed payment filter constraints into Supabase queries to reduce in-process filtering overhead and improve dashboard latency at larger payment volumes.
+- Introduced deterministic FX conversion utility to support multi-currency payment acceptance with explicit settlement currency and stored FX rate.
+- Added processor routing abstraction (`stripe`/`adyen`/`razorpay`) as a baseline for future real provider adapters without changing payment API contract.
+- Adopted `requires_action` payment state to model 3DS challenge flows cleanly before authorization/capture transitions.
+- Implemented dunning state as first-class subscription fields (`dunning_attempts`, `canceled_at`) so retry and auto-cancel logic is auditable.
+- Added embeddable checkout as a static SDK script (`public/sdk`) to decouple merchant-site integration from dashboard React components.
+- Implemented provider integrations using env-configured adapter endpoints with mock fallback to keep local/dev deterministic while enabling production connectors.
+- Added PCI guardrail at API boundary to reject PAN/CVV-like payload content before business processing.
+- Shipped polyglot SDK scaffolds in-repo so external teams can start integrations across Node/Python/PHP/Java/.NET/Ruby in parallel.
+- Used runtime currency discovery (`Intl.supportedValuesOf("currency")`) to scale checkout and validation to broad ISO currency coverage without hardcoding long static lists.
+- Implemented GraphQL gateway as a focused operation layer on top of existing service modules to avoid duplicating business logic.
+- Implemented advanced features as API-first modules with deterministic local behavior so capabilities are testable before external provider contracts are finalized.
+- Added a dedicated client-side webhook management component in dashboard so merchants can self-serve endpoint lifecycle operations without API-only dependency.
+- Implemented webhook endpoint deletion as hard delete in persistence mode (with merchant scope checks) and cleanup of in-memory pending deliveries tied to deleted endpoints.
+- Switched payments dashboard filters to URL-driven auto-apply behavior (debounced for text/number inputs) to remove extra submit clicks while keeping server-rendered data source of truth.
+- Consolidated amount/date filters into grouped range controls to improve clarity while reducing dashboard header space consumption.
+- Removed amount range from dashboard filters based on product-direction feedback to keep the control strip minimal and reduce cognitive load.
+- Adopted a responsive grid layout for payments filters to prevent overlap regressions introduced by mixed fixed widths in wrapped flex rows.
+- Strengthened ignore rules before GitHub push to reduce accidental leakage of local IDE/env/log artifacts while preserving committed `.env.example`.

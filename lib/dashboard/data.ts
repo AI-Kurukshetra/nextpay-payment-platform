@@ -9,6 +9,7 @@ import {
   listWebhookEvents
 } from "@/lib/services/webhook-service";
 import { getDashboardSessionMerchant } from "@/lib/auth/dashboard-session";
+import type { ListPaymentsQueryInput } from "@/lib/validations/payment";
 
 export async function getDashboardMerchant() {
   return getDashboardSessionMerchant();
@@ -28,18 +29,53 @@ export async function getOverviewData() {
         fraudRate: 0,
         activeSubscriptions: 0
       },
-      eventTypes: [] as string[]
+      eventTypes: [] as string[],
+      onboardingChecklist: [] as Array<{ key: string; label: string; done: boolean }>,
+      processorInsights: [] as Array<{ processor: string; total: number; successRate: number }>
     };
   }
 
-  const [overview, alerts, subscriptions, events] = await Promise.all([
+  const [overview, alerts, subscriptions, events, payments, customers, endpoints] = await Promise.all([
     getAnalyticsOverview(merchant),
     listFraudAlerts(merchant),
     listSubscriptions(merchant),
-    listWebhookEvents(merchant)
+    listWebhookEvents(merchant),
+    listPayments(merchant),
+    listCustomers(merchant),
+    listWebhookEndpoints(merchant)
   ]);
 
   const eventTypes = Array.from(new Set(events.map((event) => event.type))).slice(0, 6);
+
+  const byProcessor = new Map<string, { total: number; success: number }>();
+  for (const payment of payments) {
+    const processor = payment.processor;
+    const row = byProcessor.get(processor) ?? { total: 0, success: 0 };
+    row.total += 1;
+    if (payment.status === "succeeded") {
+      row.success += 1;
+    }
+    byProcessor.set(processor, row);
+  }
+  const processorInsights = Array.from(byProcessor.entries())
+    .map(([processor, metric]) => ({
+      processor,
+      total: metric.total,
+      successRate: metric.total === 0 ? 0 : Number((metric.success / metric.total).toFixed(4))
+    }))
+    .sort((a, b) => b.successRate - a.successRate)
+    .slice(0, 5);
+
+  const onboardingChecklist = [
+    { key: "customer", label: "Create at least one customer", done: customers.length > 0 },
+    { key: "payment", label: "Create your first payment", done: payments.length > 0 },
+    { key: "webhook", label: "Configure a webhook endpoint", done: endpoints.length > 0 },
+    {
+      key: "subscription",
+      label: "Create a subscription plan",
+      done: subscriptions.length > 0
+    }
+  ];
 
   return {
     isConfigured: true,
@@ -52,17 +88,19 @@ export async function getOverviewData() {
       activeSubscriptions: subscriptions.filter((subscription) => ["active", "trialing"].includes(subscription.status))
         .length
     },
-    eventTypes
+    eventTypes,
+    onboardingChecklist,
+    processorInsights
   };
 }
 
-export async function getPaymentsData() {
+export async function getPaymentsData(filters?: ListPaymentsQueryInput) {
   const merchant = await getDashboardMerchant();
   if (!merchant) {
     return { isConfigured: false, payments: [] };
   }
 
-  const payments = await listPayments(merchant);
+  const payments = await listPayments(merchant, filters);
   return { isConfigured: true, payments };
 }
 

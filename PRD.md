@@ -2,7 +2,7 @@
 
 ## Product Requirements Document
 
-### Product: NextPay – Developer-First Payment Gateway
+### Product: PayForge – Developer-First Payment Gateway
 
 ### Domain: FinTech / Payment Infrastructure
 
@@ -10,7 +10,7 @@
 
 # 1. Product Overview
 
-NextPay is a developer-focused payment gateway designed to enable businesses to accept, process, and manage online payments through simple APIs and embeddable checkout tools.
+PayForge is a developer-focused payment gateway designed to enable businesses to accept, process, and manage online payments through simple APIs and embeddable checkout tools.
 
 The platform focuses on:
 
@@ -443,7 +443,7 @@ Focus areas:
 
 # 14. Future Vision
 
-NextPay aims to evolve into a **complete payment infrastructure platform** with:
+PayForge aims to evolve into a **complete payment infrastructure platform** with:
 
 * AI-driven payment optimization
 * Advanced fraud detection

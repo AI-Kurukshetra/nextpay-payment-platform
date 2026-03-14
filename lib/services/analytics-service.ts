@@ -67,3 +67,39 @@ export async function getAnalyticsOverview(merchant: MerchantRecord) {
     successRate: payments.length === 0 ? 0 : Number((succeededPayments.length / payments.length).toFixed(4))
   };
 }
+
+export async function getPaymentMethodPerformance(merchant: MerchantRecord) {
+  const payments = Array.from(db.payments.values()).filter((payment) => payment.merchantId === merchant.id);
+  const byProcessor = new Map<string, { total: number; succeeded: number; volume: number }>();
+  const byCurrency = new Map<string, { total: number; succeeded: number; volume: number }>();
+
+  for (const payment of payments) {
+    const processorKey = payment.processor ?? "unknown";
+    const processor = byProcessor.get(processorKey) ?? { total: 0, succeeded: 0, volume: 0 };
+    processor.total += 1;
+    processor.volume += payment.amount;
+    if (payment.status === "succeeded") processor.succeeded += 1;
+    byProcessor.set(processorKey, processor);
+
+    const currency = byCurrency.get(payment.currency) ?? { total: 0, succeeded: 0, volume: 0 };
+    currency.total += 1;
+    currency.volume += payment.amount;
+    if (payment.status === "succeeded") currency.succeeded += 1;
+    byCurrency.set(payment.currency, currency);
+  }
+
+  return {
+    processors: Array.from(byProcessor.entries()).map(([name, metric]) => ({
+      processor: name,
+      total: metric.total,
+      volume: metric.volume,
+      successRate: metric.total === 0 ? 0 : Number((metric.succeeded / metric.total).toFixed(4))
+    })),
+    currencies: Array.from(byCurrency.entries()).map(([code, metric]) => ({
+      currency: code,
+      total: metric.total,
+      volume: metric.volume,
+      successRate: metric.total === 0 ? 0 : Number((metric.succeeded / metric.total).toFixed(4))
+    }))
+  };
+}

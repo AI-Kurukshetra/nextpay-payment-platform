@@ -3,6 +3,7 @@ import { AppError } from "@/lib/api/errors";
 import { jsonError, jsonOk } from "@/lib/api/http";
 import { processSubscriptionBillingCycles } from "@/lib/services/subscription-service";
 import { processWebhookRetries } from "@/lib/services/webhook-service";
+import { processSettlements } from "@/lib/services/settlement-service";
 
 function requireWorkerSecret(input: string | null) {
   const configured = process.env.NEXTPAY_WORKER_SECRET;
@@ -19,9 +20,10 @@ export async function POST() {
     const headerStore = await headers();
     requireWorkerSecret(headerStore.get("x-worker-secret"));
 
-    const [webhooks, subscriptions] = await Promise.all([
+    const [webhooks, subscriptions, settlements] = await Promise.all([
       processWebhookRetries(),
-      processSubscriptionBillingCycles()
+      processSubscriptionBillingCycles(),
+      processSettlements()
     ]);
 
     return jsonOk({
@@ -30,6 +32,10 @@ export async function POST() {
         processed: webhooks.length
       },
       subscriptions
+      ,
+      settlements: {
+        processed: settlements.length
+      }
     });
   } catch (error) {
     return jsonError(error);

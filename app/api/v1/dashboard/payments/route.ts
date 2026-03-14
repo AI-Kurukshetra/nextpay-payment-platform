@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createPaymentSchema } from "@/lib/validations/payment";
 import { createPayment } from "@/lib/services/payment-service";
 import { getDashboardSessionMerchant } from "@/lib/auth/dashboard-session";
+import { assertNoSensitiveCardData } from "@/lib/security/pci";
 
 export async function POST(request: Request) {
   const merchant = await getDashboardSessionMerchant();
@@ -18,6 +19,7 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
+  assertNoSensitiveCardData(parsed.data.metadata);
 
   const idempotencyKey = request.headers.get("x-idempotency-key") ?? undefined;
   const payment = await createPayment(merchant, parsed.data, idempotencyKey);

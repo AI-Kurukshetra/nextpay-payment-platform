@@ -15,14 +15,16 @@ const monoFont = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NextPay",
+  title: "PayForge",
   description: "Developer-first payment gateway"
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${headingFont.variable} ${monoFont.variable} antialiased`}>{children}</body>
+      <body suppressHydrationWarning className={`${headingFont.variable} ${monoFont.variable} antialiased`}>
+        {children}
+      </body>
     </html>
   );
 }

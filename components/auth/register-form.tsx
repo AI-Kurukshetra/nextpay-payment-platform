@@ -2,18 +2,22 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toReadableErrorMessage } from "@/lib/ui/error-message";
 
 export function RegisterForm() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [createdApiKey, setCreatedApiKey] = useState("");
+  const [isKeyPopupOpen, setIsKeyPopupOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    setIsCopied(false);
     setIsLoading(true);
 
     try {
@@ -25,16 +29,31 @@ export function RegisterForm() {
 
       const result = await response.json();
       if (!response.ok) {
-        setError(result.error ?? "register_failed");
+        setError(toReadableErrorMessage(result.error ?? "register_failed"));
         return;
       }
 
       setCreatedApiKey(result.apiKey ?? "");
-      router.push("/overview");
-      router.refresh();
+      setIsKeyPopupOpen(true);
     } finally {
       setIsLoading(false);
     }
+  }
+
+  async function onCopyApiKey() {
+    if (!createdApiKey) return;
+    try {
+      await navigator.clipboard.writeText(createdApiKey);
+      setIsCopied(true);
+    } catch {
+      setError(toReadableErrorMessage("copy_failed"));
+    }
+  }
+
+  function onContinueToDashboard() {
+    setIsKeyPopupOpen(false);
+    router.push("/overview");
+    router.refresh();
   }
 
   return (
@@ -78,6 +97,38 @@ export function RegisterForm() {
         <p className="rounded-xl bg-slate-900 px-3 py-2 text-xs text-cyan-100">
           API key (store securely): {createdApiKey}
         </p>
+      ) : null}
+
+      {isKeyPopupOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl">
+            <h2 className="text-lg font-semibold">Copy Your API Key</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              This key is shown once here. Copy and store it securely before continuing.
+            </p>
+
+            <div className="mt-3 rounded-xl bg-slate-900 px-3 py-2 text-xs text-cyan-100 break-all">
+              {createdApiKey}
+            </div>
+
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                onClick={onCopyApiKey}
+                type="button"
+              >
+                {isCopied ? "Copied" : "Copy API Key"}
+              </button>
+              <button
+                className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
+                onClick={onContinueToDashboard}
+                type="button"
+              >
+                OK, Continue
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </form>
   );

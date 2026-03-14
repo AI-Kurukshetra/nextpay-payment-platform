@@ -1,6 +1,6 @@
-# NextPay AI Agent Instructions
+# PayForge AI Agent Instructions
 
-Project: NextPay Payment Gateway
+Project: PayForge Payment Gateway
 
 Goal:
 Build a developer-first payment gateway similar to Stripe and Razorpay.

@@ -6,7 +6,7 @@
 - Implemented business logic in `lib/services/` for all core modules.
 - Added validation schemas in `lib/validations/` and request guards for rate-limiting and API-key auth.
 - Added in-memory data store abstraction in `lib/store/` to support local execution.
-- Added initial Supabase migration `supabase/migrations/20260314093000_init_nextpay.sql` including RLS policies.
+- Added initial Supabase migration `supabase/migrations/20260314093000_init_payforge.sql` including RLS policies.
 - Added Supabase persistence mode via `NEXTPAY_PERSISTENCE=supabase` across service layer.
 - Added admin Supabase client and persistence mode gating for safe local fallback.
 - Added performance migration `supabase/migrations/20260314095500_performance_indexes.sql`:
@@ -56,3 +56,164 @@
   - `merchant_api_keys`
   - `api_audit_logs`
   - backfill of legacy merchant API keys
+- Added payment query filtering (`q/status/currency/minAmount/maxAmount/createdFrom/createdTo`) for `GET /api/v1/payments`.
+- Added reporting endpoints:
+  - `GET /api/v1/reporting/summary`
+  - `GET /api/v1/reporting/transactions/export` (CSV)
+- Added payment link flows:
+  - `POST /api/v1/payment-links`
+  - `GET /api/v1/payment-links`
+  - `GET /api/v1/payment-links/[token]`
+  - `POST /api/v1/payment-links/[token]`
+- Added dispute APIs:
+  - `POST /api/v1/disputes`
+  - `GET /api/v1/disputes`
+  - `GET /api/v1/disputes/[id]`
+  - `PATCH/POST /api/v1/disputes/[id]`
+- Added fraud rules APIs:
+  - `POST /api/v1/fraud/rules`
+  - `GET /api/v1/fraud/rules`
+  - `PATCH/POST /api/v1/fraud/rules/[id]`
+- Enhanced fraud scoring to apply merchant-configured custom rules.
+- Added webhook endpoint verification:
+  - `POST /api/v1/webhooks/endpoints/[id]/verify`
+  - `verified_at` tracking on webhook endpoints.
+- Added migration `supabase/migrations/20260314123000_feature_gap_close.sql` for:
+  - `disputes`
+  - `payment_links`
+  - `fraud_rules`
+  - `webhook_endpoints.verified_at`
+- Added payment method vault APIs:
+  - `POST /api/v1/payment-methods`
+  - `GET /api/v1/payment-methods`
+- Added invoice APIs:
+  - `POST /api/v1/invoices`
+  - `GET /api/v1/invoices`
+  - `PATCH/POST /api/v1/invoices/[id]`
+- Added settlement APIs:
+  - `POST /api/v1/settlements`
+  - `GET /api/v1/settlements`
+  - `POST /api/v1/settlements/process` (worker-secret protected)
+- Worker orchestration now also processes due settlements.
+- Added migration `supabase/migrations/20260314130000_payments_extensions.sql` for:
+  - `payment_methods`
+  - `invoices`
+  - `settlements`
+- Added marketplace and modern payment APIs:
+  - `POST/GET /api/v1/marketplace/sub-merchants`
+  - `POST /api/v1/marketplace/splits/preview`
+  - `POST /api/v1/marketplace/splits/execute`
+  - `POST/GET /api/v1/payment-methods/wallets`
+  - `POST /api/v1/payment-methods/wallets/[id]/authorize`
+  - `POST /api/v1/payments/[id]/3ds/authenticate`
+  - `GET /api/v1/stream/transactions` (SSE)
+- Added migration `supabase/migrations/20260314134500_marketplace_wallet_streaming.sql` for:
+  - `sub_merchants`
+  - `split_transfers`
+  - `wallet_sessions`
+- Optimized payment query path:
+  - Supabase list filters (`status/currency/min/max/created range`) are now pushed down to DB query.
+  - Added `listLatestPayments()` service function for low-overhead recent-window reads.
+- Optimized SSE transaction stream to use latest-window reads instead of loading full history each interval.
+- Extended Supabase query builder typing to support `gte/lte/limit` used by optimized reads.
+- Added FX conversion support and settlement currency tracking for payment creation via `lib/services/fx-service.ts`.
+- Added payment processor routing service (`lib/services/payment-router-service.ts`) and processor metadata on payments.
+- Enhanced payment model/status flow:
+  - Added `requires_action` status for 3DS-required payments.
+  - Added 3DS initiation endpoint: `POST /api/v1/payments/[id]/3ds/initiate`.
+- Enhanced wallet session lifecycle:
+  - Expiry and provider session identifiers.
+  - Authorization now creates linked payment and auth token.
+- Enhanced settlement engine:
+  - Added payout method (`standard`/`instant`), provider selection, fee model, and provider execution simulation.
+  - Added payout provider adapter service (`lib/services/payout-provider-service.ts`).
+- Enhanced subscriptions:
+  - Added `PATCH /api/v1/subscriptions/[id]` for plan updates/cancel-at-period-end.
+  - Added proration handling for plan changes.
+  - Added dunning attempt tracking and auto-cancel behavior after configurable max attempts.
+- Added migration `supabase/migrations/20260314143000_subscription_dunning.sql`:
+  - `subscriptions.dunning_attempts`
+  - `subscriptions.canceled_at`
+  - status/next-billing index
+- Added advanced analytics endpoint:
+  - `GET /api/v1/analytics/method-performance`
+- Added live dashboard transaction panel consuming SSE stream:
+  - `components/dashboard/live-transactions.tsx`
+  - integrated into `app/(dashboard)/overview/page.tsx`
+- Added embeddable checkout SDK script:
+  - `public/sdk/payforge-checkout.js`
+- Added external provider integration adapters:
+  - `lib/integrations/payout-provider.ts` (supports env-driven payout providers)
+  - `lib/integrations/wallet-provider.ts` (wallet token authorization provider bridge)
+  - `lib/integrations/three-ds-provider.ts` (3DS initiate/complete provider bridge)
+  - shared HTTP helper: `lib/integrations/provider-http.ts`
+- Wired provider adapters into settlement/wallet/3DS services for live-or-mock execution mode.
+- Added PCI hardening guard:
+  - `lib/security/pci.ts`
+  - sensitive PAN/CVV-like fields blocked on payment creation paths.
+- Added SDK suite scaffolding under `sdk/`:
+  - Node.js (`sdk/node/index.ts`)
+  - Python (`sdk/python/payforge_client.py`)
+  - PHP (`sdk/php/PayForgeClient.php`)
+  - Java (`sdk/java/src/main/java/com/payforge/PayForgeClient.java`)
+  - .NET (`sdk/dotnet/PayForgeClient.cs`)
+  - Ruby (`sdk/ruby/payforge_client.rb`)
+  - overview docs (`sdk/README.md`)
+- Expanded currency support:
+  - Added runtime-supported ISO currency catalog service (`lib/services/currency-catalog.ts`)
+  - Updated FX conversion to support broad currency set deterministically in sandbox (`lib/services/fx-service.ts`)
+  - Updated checkout widget dropdown to show full supported currency list.
+- Added advanced feature APIs:
+  - `GET /api/v1/optimization/recommendations` (AI optimization recommendations)
+  - `POST /api/v1/graphql` (GraphQL gateway)
+  - `POST /api/v1/payments/crypto/quote`
+  - `POST /api/v1/payments/crypto/confirm`
+  - `POST/GET /api/v1/experiments`
+  - `POST /api/v1/experiments/{id}/assign`
+  - `GET /api/v1/compliance/reports`
+  - `GET /api/v1/analytics/cashflow/forecast`
+  - `POST /api/v1/pricing/recommendation`
+- Added supporting services for advanced features:
+  - `lib/services/optimization-service.ts`
+  - `lib/services/graphql-service.ts`
+  - `lib/services/crypto-service.ts`
+  - `lib/services/experiment-service.ts`
+  - `lib/services/compliance-service.ts`
+  - `lib/services/forecast-service.ts`
+  - `lib/services/pricing-service.ts`
+- Added webhook endpoint full management support:
+  - `PATCH /api/v1/webhooks/endpoints/{id}`
+  - `DELETE /api/v1/webhooks/endpoints/{id}`
+  - service methods `updateWebhookEndpoint` and `deleteWebhookEndpoint`
+  - validation schema `updateWebhookEndpointSchema`
+- Added merchant dashboard webhook management UI (`components/dashboard/webhooks-manager.tsx`) with:
+  - endpoint create/update/delete/verify actions
+  - test webhook event trigger
+  - recent deliveries and events visibility
+- Updated `app/(dashboard)/webhooks/page.tsx` to render full interactive manager for authenticated merchants.
+- Extended Supabase query builder typing with `.delete()` to align internal type contract with current service usage.
+- Expanded webhook service unit tests to cover endpoint update and delete flows.
+- Improved payments dashboard filtering UX:
+  - replaced manual submit form with auto-apply filter bar (`components/dashboard/payments-filters.tsx`)
+  - added `maxAmount`, `createdFrom`, and `createdTo` filter controls
+  - added clear-filters action
+  - debounced free-text/number/currency updates to reduce noisy reloads
+- Updated payment list filter validation to accept any parseable date string for `createdFrom`/`createdTo`.
+- Refined payments filter component to a compact, labeled layout:
+  - merged amount controls into a single "Amount Range (cents)" group (`min` + `max`)
+  - merged date controls into a single "Date Range" group (`from` + `to`)
+  - reduced spacing and control heights for denser dashboard usage
+- Fixed amount filter reliability:
+  - centralized filter state updates to avoid stale value races
+  - normalize invalid/non-positive range values before URL updates
+  - auto-correct `min > max` by swapping bounds
+  - guarded server-side query parsing in payments page against invalid numeric input
+  - tightened in-memory payment filtering checks to use explicit numeric guards
+- Updated payments filter UI to remove amount range controls; final compact filter set is search, status, currency, and date range (auto-apply).
+- Fixed payments filter UI overlap issue:
+  - replaced flex-wrap + fixed-width controls with a responsive CSS grid
+  - added `min-w-0` guards on fields to prevent overflow
+  - aligned Clear button with fixed control height and end-column placement on wide screens
+- Hardened repository ignore policy in root `.gitignore`:
+  - added `.env.*` with `!.env.example` allowlist
+  - added `.idea`, `.vscode`, `.pnpm-store`, `.DS_Store`, and `*.log`

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { RegisterForm } from "@/components/auth/register-form";
 
 export const metadata = {
-  title: "Register | NextPay"
+  title: "Register | PayForge"
 };
 
 export default function RegisterPage() {
