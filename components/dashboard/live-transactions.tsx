@@ -21,7 +21,7 @@ export function LiveTransactions() {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const source = new EventSource("/api/v1/stream/transactions");
+    const source = new EventSource("/api/v1/dashboard/stream/transactions");
     source.addEventListener("transactions", (event) => {
       const data = JSON.parse((event as MessageEvent<string>).data) as StreamPayload;
       setPayload(data);

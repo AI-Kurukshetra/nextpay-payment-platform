@@ -8,6 +8,8 @@ const ERROR_MESSAGE_MAP: Record<string, string> = {
   rate_limit_exceeded: "Too many requests. Please wait a moment and try again.",
   copy_failed: "Could not copy API key automatically. Please copy it manually.",
   unsupported_currency: "This currency is not supported for this operation.",
+  payment_type_not_allowed: "This payment type is currently disabled by the merchant.",
+  notification_not_found: "Notification not found.",
   payment_not_found: "Payment not found.",
   subscription_not_found: "Subscription not found."
 };

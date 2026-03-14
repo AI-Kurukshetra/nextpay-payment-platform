@@ -1,0 +1,21 @@
+<svg width="640" height="220" viewBox="0 0 640 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="640" height="220" rx="28" fill="#F8FAFC"/>
+  <rect x="1" y="1" width="638" height="218" rx="27" stroke="#E2E8F0"/>
+
+  <rect x="28" y="28" width="164" height="164" rx="34" fill="url(#pf_bg)"/>
+  <rect x="48" y="48" width="124" height="124" rx="26" fill="white" fill-opacity="0.95"/>
+  <path d="M78 112H146" stroke="#0F766E" stroke-width="11" stroke-linecap="round"/>
+  <path d="M99 86V137" stroke="#0F766E" stroke-width="11" stroke-linecap="round"/>
+  <path d="M121 86H147" stroke="#0F766E" stroke-width="11" stroke-linecap="round"/>
+  <circle cx="150" cy="84" r="10" fill="#14B8A6"/>
+
+  <text x="222" y="118" fill="#0F172A" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="64" font-weight="800">PayForge</text>
+  <text x="224" y="154" fill="#475569" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="20" font-weight="500">Merchant Payment Gateway</text>
+
+  <defs>
+    <linearGradient id="pf_bg" x1="28" y1="28" x2="192" y2="192" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#14B8A6"/>
+      <stop offset="1" stop-color="#0F766E"/>
+    </linearGradient>
+  </defs>
+</svg>

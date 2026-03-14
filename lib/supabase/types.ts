@@ -10,6 +10,7 @@ export type SupabaseResult = {
 export interface SupabaseQueryBuilder {
   select(columns?: string): SupabaseQueryBuilder;
   insert(values: unknown): SupabaseQueryBuilder;
+  upsert(values: unknown): SupabaseQueryBuilder;
   update(values: unknown): SupabaseQueryBuilder;
   delete(): SupabaseQueryBuilder;
   eq(column: string, value: unknown): SupabaseQueryBuilder;

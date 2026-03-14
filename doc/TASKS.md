@@ -64,6 +64,11 @@
 - [x] 2026-03-14 16:00 — Fix payments filter layout overlap by replacing fixed-width wrap with responsive grid and clear-button alignment
 - [x] 2026-03-14 16:14 — Harden repository ignore rules for GitHub push (`.idea/.vscode/.env.*/*.log/.pnpm-store` with `.env.example` allowlist)
 - [x] 2026-03-14 16:26 — Add dashboard storefront demo webapp and checkout API to simulate buyer flow through PayForge gateway
+- [x] 2026-03-14 17:08 — Add fully separate `storefront-app` project with its own server route that calls main PayForge gateway APIs
+- [x] 2026-03-14 17:50 — Add merchant-configurable allowed payment types (card/bank/crypto) with dashboard controls and gateway-level enforcement
 - [x] 2026-03-14 16:30 — Add voice-command payment API (`/api/v1/payments/voice/commands`) with ASR/NLU provider adapters and fallback parser
 - [x] 2026-03-14 16:33 — Fix Vercel deploy crash when Supabase env vars are missing by making middleware session refresh Supabase-aware
 - [x] 2026-03-14 16:35 — Replace Supabase-skip workaround with strict env resolution (`NEXT_PUBLIC_*` or `SUPABASE_*`) to keep DB mandatory on Vercel
+- [x] 2026-03-14 17:52 — Add API-key merchant endpoint for payment type preferences (`GET/PATCH /api/v1/payment-preferences`) and OpenAPI documentation
+- [x] 2026-03-14 18:08 — Complete notifications API module (`/api/v1/notifications`) with migration, service wiring, and OpenAPI coverage
+- [x] 2026-03-14 18:08 — Polish `supabase/seed.sql` with client-showcase English merchant/customer/domain naming

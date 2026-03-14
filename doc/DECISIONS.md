@@ -44,6 +44,11 @@
 - Adopted a responsive grid layout for payments filters to prevent overlap regressions introduced by mixed fixed widths in wrapped flex rows.
 - Strengthened ignore rules before GitHub push to reduce accidental leakage of local IDE/env/log artifacts while preserving committed `.env.example`.
 - Implemented the merchant integration demo as a dashboard-hosted storefront so payment creation uses secure session-backed server routes (no API keys exposed in client code).
+- Added a second, standalone storefront codebase to mirror real merchant integration architecture where merchant app and gateway are separate deployable services.
+- Added merchant-level payment-type policy (card/bank/crypto) as a first-class gateway control and enforced it server-side to guarantee rules apply across all clients, not just dashboard UI.
+- Exposed payment-type policy over API-key endpoints so external merchant tools can manage checkout eligibility without dashboard session dependency.
 - Implemented voice payments as an intent layer on top of existing payment/refund services (instead of direct DB writes) so command execution inherits established fraud, idempotency, webhook, and state-transition logic.
 - Made Supabase middleware initialization conditional on public env presence to support memory-mode/staging deployments on Vercel without forcing Supabase configuration.
 - Revised Supabase strategy: do not bypass Supabase initialization; instead, resolve server env from `NEXT_PUBLIC_*` with `SUPABASE_*` fallback and fail hard if none are present.
+- Added `notifications` as a first-class merchant API resource to match the blueprint entity/API-group coverage and keep merchant-facing event communication auditable.
+- Curated seed dataset text to business-style English naming so dashboard/API demos look production-like during client walkthroughs.
